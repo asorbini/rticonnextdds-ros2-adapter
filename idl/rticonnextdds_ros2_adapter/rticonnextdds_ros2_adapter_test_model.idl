@@ -1,0 +1,5 @@
+module RTIROS2 {
+  struct String {
+    string<256> a_str;
+  };
+};

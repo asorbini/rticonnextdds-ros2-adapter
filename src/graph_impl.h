@@ -17,11 +17,6 @@
 #define rti_ros2_graph_impl_h
 
 #include "rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_graph.h"
-#include "rmw_dds_common/msg/Graph.h"
-
-#ifndef UNUSED_ARG
-#define UNUSED_ARG(x_) (void)(x_)
-#endif  /* UNUSED_ARG */
 
 extern const char * const RTIROS2_GRAPH_THREAD_NAME;
 
@@ -32,15 +27,6 @@ typedef enum RTIROS2_GraphTopicType
   RTIROS2_GRAPH_TOPIC_REQUEST = 2,
   RTIROS2_GRAPH_TOPIC_REPLY = 3,
 } RTIROS2_GraphTopicType_t;
-
-typedef enum RTIROS2_GraphEndpointType
-{
-  RTIROS2_GRAPH_ENDPOINT_UNKNOWN = 0,
-  RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION = 1,
-  RTIROS2_GRAPH_ENDPOINT_PUBLISHER = 2,
-  RTIROS2_GRAPH_ENDPOINT_CLIENT = 3,
-  RTIROS2_GRAPH_ENDPOINT_SERVICE = 4
-} RTIROS2_GraphEndpointType_t;
 
 typedef struct RTIROS2_GraphEndpointI
 {
@@ -73,7 +59,7 @@ typedef struct RTIROS2_GraphNodeI
   RTIROS2_GraphEndpointHandle endp_handle_next;
   char * node_name;
   char * node_namespace;
-  rmw_dds_common_msg_NodeEntitiesInfo * ninfo;
+  RTIROS2_NodeEntitiesInfo * ninfo;
   DDS_DomainParticipant * dds_participant;
 } RTIROS2_GraphNode;
 
@@ -106,7 +92,7 @@ struct RTIROS2_GraphI
   DDS_Boolean graph_topic_own;
   DDS_DataWriter * graph_writer;
   DDS_Boolean graph_writer_own;
-  rmw_dds_common_msg_ParticipantEntitiesInfo * pinfo;
+  RTIROS2_ParticipantEntitiesInfo * pinfo;
   struct RTIOsapiSemaphore * mutex_self;
   struct RTIOsapiSemaphore * sem_pinfo;
   struct RTIOsapiSemaphore * sem_pinfo_exit;
@@ -137,6 +123,14 @@ struct RTIROS2_GraphI
   DDS_BOOLEAN_FALSE /* thread_pinfo_active */,\
   {0, 0} /* poll_period */,\
 }
+
+DDS_ReturnCode_t
+RTIROS2_Graph_initialize(
+  RTIROS2_Graph * const self,
+  const struct RTIROS2_GraphProperties * const properties);
+
+DDS_ReturnCode_t
+RTIROS2_Graph_finalize(RTIROS2_Graph * const self);
 
 #define RTIROS2_Graph_is_polling_enabled(s_) \
   (!DDS_Duration_is_zero(&(s_)->poll_period) && \
@@ -259,18 +253,18 @@ RTIROS2_Graph_count_node_endpoints(
 void
 RTIROS2_Graph_ih_to_gid(
   const DDS_InstanceHandle_t * const ih,
-  rmw_dds_common_msg_Gid * const gid);
+  RTIROS2_Gid * const gid);
 
 DDS_ReturnCode_t
 RTIROS2_Graph_node_to_sample(
   RTIROS2_Graph * const self,
   RTIROS2_GraphNode * const node,
-  rmw_dds_common_msg_NodeEntitiesInfo * const sample);
+  RTIROS2_NodeEntitiesInfo * const sample);
 
 DDS_ReturnCode_t
 RTIROS2_Graph_to_sample(
   RTIROS2_Graph * const self,
-  rmw_dds_common_msg_ParticipantEntitiesInfo * const sample);
+  RTIROS2_ParticipantEntitiesInfo * const sample);
 
 DDS_ReturnCode_t
 RTIROS2_Graph_publish_update(RTIROS2_Graph * const self);
