@@ -16,68 +16,71 @@
 #ifndef rti_ros2_graph_impl_h
 #define rti_ros2_graph_impl_h
 
-#include "rti/ros2/graph.h"
+#include "rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_graph.h"
 #include "rmw_dds_common/msg/Graph.h"
 
 #ifndef UNUSED_ARG
 #define UNUSED_ARG(x_) (void)(x_)
 #endif  /* UNUSED_ARG */
 
-typedef enum RTI_Ros2GraphTopicType
-{
-  RTI_ROS2_GRAPH_TOPIC_UNKNOWN = 0,
-  RTI_ROS2_GRAPH_TOPIC_TOPIC = 1,
-  RTI_ROS2_GRAPH_TOPIC_REQUEST = 2,
-  RTI_ROS2_GRAPH_TOPIC_REPLY = 3,
-} RTI_Ros2GraphTopicType_t;
+extern const char * const RTIROS2_GRAPH_THREAD_NAME;
 
-typedef enum RTI_Ros2GraphEndpointType
+typedef enum RTIROS2_GraphTopicType
 {
-  RTI_ROS2_GRAPH_ENDPOINT_UNKNOWN = 0,
-  RTI_ROS2_GRAPH_ENDPOINT_SUBSCRIPTION = 1,
-  RTI_ROS2_GRAPH_ENDPOINT_PUBLISHER = 2,
-  RTI_ROS2_GRAPH_ENDPOINT_CLIENT = 3,
-  RTI_ROS2_GRAPH_ENDPOINT_SERVICE = 4
-} RTI_Ros2GraphEndpointType_t;
+  RTIROS2_GRAPH_TOPIC_UNKNOWN = 0,
+  RTIROS2_GRAPH_TOPIC_TOPIC = 1,
+  RTIROS2_GRAPH_TOPIC_REQUEST = 2,
+  RTIROS2_GRAPH_TOPIC_REPLY = 3,
+} RTIROS2_GraphTopicType_t;
 
-typedef struct RTI_Ros2GraphEndpointI
+typedef enum RTIROS2_GraphEndpointType
+{
+  RTIROS2_GRAPH_ENDPOINT_UNKNOWN = 0,
+  RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION = 1,
+  RTIROS2_GRAPH_ENDPOINT_PUBLISHER = 2,
+  RTIROS2_GRAPH_ENDPOINT_CLIENT = 3,
+  RTIROS2_GRAPH_ENDPOINT_SERVICE = 4
+} RTIROS2_GraphEndpointType_t;
+
+typedef struct RTIROS2_GraphEndpointI
 {
   struct REDAInlineListNode list_node;
-  RTI_Ros2GraphEndpointHandle handle;
+  RTIROS2_GraphEndpointHandle handle;
   DDS_DataReader *dds_reader;
   DDS_DataWriter *dds_writer;
-  RTI_Ros2GraphEndpointType_t endp_type;
+  RTIROS2_GraphEndpointType_t endp_type;
   void * endp_data;
-} RTI_Ros2GraphEndpoint;
+} RTIROS2_GraphEndpoint;
 
-#define RTI_Ros2GraphEndpoint_INITIALIZER \
+#define RTIROS2_GraphEndpoint_INITIALIZER \
 {\
   REDAInlineListNode_INITIALIZER /* list_node */,\
-  RTI_Ros2GraphEndpointHandle_INVALID /* handle */,\
+  RTIROS2_GraphEndpointHandle_INVALID /* handle */,\
   NULL /* dds_reader */,\
   NULL /* dds_writer */,\
-  RTI_ROS2_GRAPH_ENDPOINT_UNKNOWN /* endp_type */,\
+  RTIROS2_GRAPH_ENDPOINT_UNKNOWN /* endp_type */,\
   NULL /* endp_data */\
 }
 
-typedef struct RTI_Ros2GraphNodeI
+typedef struct RTIROS2_GraphNodeI
 {
   struct REDAInlineListNode list_node;
-  RTI_Ros2GraphNodeHandle handle;
+  RTIROS2_GraphNodeHandle handle;
   struct REDAInlineList endpoints;
   size_t endpoints_len;
   size_t writers_len;
   size_t readers_len;
-  RTI_Ros2GraphEndpointHandle endp_handle_next;
+  RTIROS2_GraphEndpointHandle endp_handle_next;
   char * node_name;
   char * node_namespace;
   rmw_dds_common_msg_NodeEntitiesInfo * ninfo;
-} RTI_Ros2GraphNode;
+  DDS_DomainParticipant * dds_participant;
+} RTIROS2_GraphNode;
 
-#define RTI_Ros2GraphNode_INITIALIZER \
+#define RTIROS2_GraphNode_INITIALIZER \
 {\
   REDAInlineListNode_INITIALIZER /* list_node */,\
-  RTI_Ros2GraphNodeHandle_INVALID /* handle */,\
+  RTIROS2_GraphNodeHandle_INVALID /* handle */,\
   REDA_INLINE_LIST_EMPTY /* endpoints */,\
   0 /* endpoints_len */,\
   0 /* writers_len */,\
@@ -85,19 +88,20 @@ typedef struct RTI_Ros2GraphNodeI
   0 /* endp_handle_next */,\
   NULL /* name */,\
   NULL /* node_namespace */,\
-  NULL /* ninfo */\
+  NULL /* ninfo */,\
+  NULL /* dds_participant */\
 }
 
-struct RTI_Ros2GraphI
+struct RTIROS2_GraphI
 {
   struct REDAInlineList nodes;
   size_t nodes_len;
   struct REDAFastBufferPool *nodes_pool;
   struct REDAFastBufferPool *endpoints_pool;
-  RTI_Ros2GraphNodeHandle node_handle_next;
-  DDS_DomainParticipant * dds_participant;
-  DDS_Publisher * dds_publisher;
-  DDS_Boolean dds_publisher_own;
+  RTIROS2_GraphNodeHandle node_handle_next;
+  DDS_DomainParticipant * graph_participant;
+  DDS_Publisher * graph_publisher;
+  DDS_Boolean graph_publisher_own;
   DDS_Topic * graph_topic;
   DDS_Boolean graph_topic_own;
   DDS_DataWriter * graph_writer;
@@ -108,18 +112,19 @@ struct RTI_Ros2GraphI
   struct RTIOsapiSemaphore * sem_pinfo_exit;
   struct RTIOsapiThread * thread_pinfo;
   DDS_Boolean thread_pinfo_active;
+  struct DDS_Duration_t poll_period;
 };
 
-#define RTI_Ros2Graph_INITIALIZER \
+#define RTIROS2_Graph_INITIALIZER \
 {\
   REDA_INLINE_LIST_EMPTY /* nodes */,\
   0 /* nodes_len */,\
   NULL /* nodes_pool */,\
   NULL /* endpoints_pool */,\
   0 /* node_handle_next */,\
-  NULL /* dds_participant */,\
-  NULL /* dds_publisher */,\
-  DDS_BOOLEAN_FALSE /* dds_publisher_own */,\
+  NULL /* graph_participant */,\
+  NULL /* graph_publisher */,\
+  DDS_BOOLEAN_FALSE /* graph_publisher_own */,\
   NULL /* graph_topic */,\
   DDS_BOOLEAN_FALSE /* graph_topic_own */,\
   NULL /* graph_writer */,\
@@ -129,103 +134,157 @@ struct RTI_Ros2GraphI
   NULL /* sem_pinfo */,\
   NULL /* sem_pinfo_exit */,\
   NULL /* thread_pinfo */,\
-  DDS_BOOLEAN_FALSE /* thread_pinfo_active */\
+  DDS_BOOLEAN_FALSE /* thread_pinfo_active */,\
+  {0, 0} /* poll_period */,\
 }
 
-RTI_Ros2GraphNodeHandle
-RTI_Ros2Graph_next_node_handle(RTI_Ros2Graph * const self);
+#define RTIROS2_Graph_is_polling_enabled(s_) \
+  (!DDS_Duration_is_zero(&(s_)->poll_period) && \
+    !DDS_Duration_is_infinite(&(s_)->poll_period))
 
-RTI_Ros2GraphNodeHandle
-RTI_Ros2Graph_next_endpoint_handle(
-  RTI_Ros2Graph * const self,
-  RTI_Ros2GraphNode * const node);
+RTIROS2_GraphEndpointType_t
+RTIROS2_Graph_detect_topic_type(
+  const char * const topic_name,
+  const DDS_Boolean writer);
 
-RTI_Ros2GraphNode*
-RTI_Ros2Graph_lookup_local_node_by_name(
-  RTI_Ros2Graph * const self,
+DDS_ReturnCode_t
+RTIROS2_Graph_get_graph_writer_qos(
+  RTIROS2_Graph * const self,
+  struct DDS_DataWriterQos * const writer_qos);
+
+RTIROS2_GraphNodeHandle
+RTIROS2_Graph_next_node_handle(RTIROS2_Graph * const self);
+
+RTIROS2_GraphNodeHandle
+RTIROS2_Graph_next_endpoint_handle(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node);
+
+RTIROS2_GraphNode*
+RTIROS2_Graph_lookup_local_node_by_name(
+  RTIROS2_Graph * const self,
   const char * const node_name,
   const char * const node_namespace);
 
-RTI_Ros2GraphNode*
-RTI_Ros2Graph_lookup_local_node_by_handle(
-  RTI_Ros2Graph * const self,
-  const RTI_Ros2GraphNodeHandle node_handle);
+RTIROS2_GraphNode*
+RTIROS2_Graph_lookup_local_node_by_handle(
+  RTIROS2_Graph * const self,
+  const RTIROS2_GraphNodeHandle node_handle);
 
-RTI_Ros2GraphEndpoint*
-RTI_Ros2Graph_lookup_local_endpoint_by_handle(
-  RTI_Ros2Graph * const self,
-  RTI_Ros2GraphNode * const node,
-  const RTI_Ros2GraphEndpointHandle endp_handle);
+RTIROS2_GraphEndpoint*
+RTIROS2_Graph_lookup_local_endpoint_by_handle(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node,
+  const RTIROS2_GraphEndpointHandle endp_handle);
 
-RTI_Ros2GraphEndpoint*
-RTI_Ros2Graph_lookup_local_endpoint_by_dds_endpoints(
-  RTI_Ros2Graph * const self,
-  RTI_Ros2GraphNode * const node,
+RTIROS2_GraphEndpoint*
+RTIROS2_Graph_lookup_local_endpoint_by_dds_endpoints(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node,
   DDS_DataReader * const dds_reader,
   DDS_DataWriter * const dds_writer);
 
-RTI_Ros2GraphEndpoint *
-RTI_Ros2Graph_register_local_endpoint(
-  RTI_Ros2Graph * const self,
-  RTI_Ros2GraphNode * const node,
-  const RTI_Ros2GraphEndpointType_t endp_type,
+RTIROS2_GraphEndpoint*
+RTIROS2_Graph_lookup_local_endpoint_by_topic_name(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node,
+  const char * const topic_name,
+  const DDS_Boolean writer);
+
+RTIROS2_GraphEndpointHandle
+RTIROS2_Graph_register_local_subscriptionEA(
+  RTIROS2_Graph * const self,
+  const RTIROS2_GraphNodeHandle node_handle,
+  DDS_DataReader * const sub_reader);
+
+RTIROS2_GraphEndpointHandle
+RTIROS2_Graph_register_local_publisherEA(
+  RTIROS2_Graph * const self,
+  const RTIROS2_GraphNodeHandle node_handle,
+  DDS_DataWriter * const pub_writer);
+
+RTIROS2_GraphEndpointHandle
+RTIROS2_Graph_register_local_clientEA(
+  RTIROS2_Graph * const self,
+  const RTIROS2_GraphNodeHandle node_handle,
+  DDS_DataReader * const client_reader,
+  DDS_DataWriter * const client_writer);
+
+RTIROS2_GraphEndpointHandle
+RTIROS2_Graph_register_local_serviceEA(
+  RTIROS2_Graph * const self,
+  const RTIROS2_GraphNodeHandle node_handle,
+  DDS_DataReader * const service_reader,
+  DDS_DataWriter * const service_writer);
+
+RTIROS2_GraphEndpoint *
+RTIROS2_Graph_register_local_endpoint(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node,
+  const RTIROS2_GraphEndpointType_t endp_type,
   DDS_DataReader * const dds_reader,
   DDS_DataWriter * const dds_writer);
 
 DDS_ReturnCode_t
-RTI_Ros2Graph_unregister_local_endpoint(
-  RTI_Ros2Graph * const self,
-  const RTI_Ros2GraphNodeHandle node_handle,
+RTIROS2_Graph_unregister_local_endpoint(
+  RTIROS2_Graph * const self,
+  const RTIROS2_GraphNodeHandle node_handle,
   DDS_DataReader * const endp_reader,
   DDS_DataWriter * const endp_writer);
 
 DDS_ReturnCode_t
-RTI_Ros2Graph_unregister_local_endpoint_by_handle(
-  RTI_Ros2Graph * const self,
-  const RTI_Ros2GraphNodeHandle node_handle,
-  const RTI_Ros2GraphEndpointHandle endp_handle);
+RTIROS2_Graph_unregister_local_endpoint_by_handle(
+  RTIROS2_Graph * const self,
+  const RTIROS2_GraphNodeHandle node_handle,
+  const RTIROS2_GraphEndpointHandle endp_handle);
 
 DDS_ReturnCode_t
-RTI_Ros2Graph_finalize_node(
-  RTI_Ros2Graph * const self,
-  RTI_Ros2GraphNode * const node);
+RTIROS2_Graph_finalize_node(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node);
 
 DDS_ReturnCode_t
-RTI_Ros2Graph_finalize_endpoint(
-  RTI_Ros2Graph * const self,
-  RTI_Ros2GraphNode * const node,
-  RTI_Ros2GraphEndpoint * const endp);
+RTIROS2_Graph_finalize_endpoint(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node,
+  RTIROS2_GraphEndpoint * const endp);
 
 void
-RTI_Ros2Graph_count_node_endpoints(
-  RTI_Ros2Graph * const self,
-  RTI_Ros2GraphNode * const node,
+RTIROS2_Graph_count_node_endpoints(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node,
   size_t * const readers_count,
   size_t * const writers_count);
 
 void
-RTI_Ros2Graph_ih_to_gid(
+RTIROS2_Graph_ih_to_gid(
   const DDS_InstanceHandle_t * const ih,
   rmw_dds_common_msg_Gid * const gid);
 
 DDS_ReturnCode_t
-RTI_Ros2Graph_node_to_sample(
-  RTI_Ros2Graph * const self,
-  RTI_Ros2GraphNode * const node,
+RTIROS2_Graph_node_to_sample(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node,
   rmw_dds_common_msg_NodeEntitiesInfo * const sample);
 
 DDS_ReturnCode_t
-RTI_Ros2Graph_to_sample(
-  RTI_Ros2Graph * const self,
+RTIROS2_Graph_to_sample(
+  RTIROS2_Graph * const self,
   rmw_dds_common_msg_ParticipantEntitiesInfo * const sample);
 
 DDS_ReturnCode_t
-RTI_Ros2Graph_publish_update(RTI_Ros2Graph * const self);
+RTIROS2_Graph_publish_update(RTIROS2_Graph * const self);
 
 void*
-RTI_Ros2Graph_update_thread(void * param);
+RTIROS2_Graph_update_thread(void * param);
 
 void
-RTI_Ros2Graph_queue_update(RTI_Ros2Graph * const self);
+RTIROS2_Graph_queue_update(RTIROS2_Graph * const self);
+
+
+DDS_ReturnCode_t
+RTIROS2_Graph_inspect_local_nodeEA(
+  RTIROS2_Graph * const self,
+  RTIROS2_GraphNode * const node);
 
 #endif  /* rti_ros2_graph_impl_h */

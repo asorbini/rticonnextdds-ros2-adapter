@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-project(rticonnextdds_ros2_graph C)
+project(rticonnextdds_ros2_adapter C)
 
 if(NOT DEFINED CONNEXTDDS_DIR)
   if(NOT "$ENV{CONNEXTDDS_DIR}" STREQUAL "")
@@ -71,8 +71,11 @@ add_library(${PROJECT_NAME} SHARED
   src/graph_impl.h
   src/graph_impl.c
   src/graph.c
-  include/rti/ros2/graph.h
+  include/rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_graph.h
   ${generated_code_sources})
+
+target_compile_definitions(${PROJECT_NAME}
+  PRIVATE "RTICONNEXTDDS_ROS2_ADAPTER_BUILDING_LIBRARY")
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${generated_code_dir})
