@@ -340,7 +340,19 @@ RTIROS2_Graph_get_graph_writer_qos(
     /* TODO(asorbini) Log error */
     goto done;
   }
-  
+
+  /* Increase the history size/resource limits to allow for multiple samples to
+     be written out, since contrary to "standard" ROS 2 mappings, we are
+     handling multiple DomainParticipants with the same DataWriter, and thus
+     we don't want the sample of one participant to push out an older sample */
+  static const DDS_Long history_depth = 100;
+  writer_qos->history.depth = history_depth;
+  writer_qos->resource_limits.max_samples = history_depth;
+  writer_qos->resource_limits.initial_samples = 1;
+  writer_qos->resource_limits.max_instances = 1;
+  writer_qos->resource_limits.initial_instances = 1;
+  writer_qos->resource_limits.max_samples_per_instance = history_depth;
+
   retcode = DDS_RETCODE_OK;
   
 done:
@@ -1019,6 +1031,7 @@ done:
 DDS_ReturnCode_t
 RTIROS2_CGraphSampleAdapter_convert_to_sample(
   RTIROS2_Graph * const self,
+  DDS_DomainParticipant * const dds_participant,
   void * const vsample,
   void * const adapter_data)
 {
@@ -1033,9 +1046,16 @@ RTIROS2_CGraphSampleAdapter_convert_to_sample(
   UNUSED_ARG(adapter_data);
 
   ih = DDS_Entity_get_instance_handle(
-    DDS_DomainParticipant_as_entity(self->graph_participant));
+    DDS_DomainParticipant_as_entity(dds_participant));
 
   RTIROS2_Graph_ih_to_gid(&ih, &sample->gid);
+
+  // printf("CONVERTED: ");
+  // for (size_t i = 0; i < RTIROS2_GID_LENGTH; i++)
+  // {
+  //   printf("%02X ", sample->gid.data[i]);
+  // }
+  // printf("\n");  
 
   if (!RTIROS2_NodeEntitiesInfoSeq_ensure_length(
     &sample->node_entities_info_seq, self->nodes_len, self->nodes_len))
@@ -1047,6 +1067,11 @@ RTIROS2_CGraphSampleAdapter_convert_to_sample(
   node = (RTIROS2_GraphNode *) REDAInlineList_getFirst(&self->nodes);
   while (NULL != node)
   {
+    if (dds_participant != node->dds_participant)
+    {
+      node = (RTIROS2_GraphNode *) REDAInlineListNode_getNext(&node->list_node);
+      continue;
+    }
     nsample = RTIROS2_NodeEntitiesInfoSeq_get_reference(
       &sample->node_entities_info_seq, node_i);
     if (DDS_RETCODE_OK != RTIROS2_Graph_node_to_sample(self, node, nsample))
@@ -1057,6 +1082,12 @@ RTIROS2_CGraphSampleAdapter_convert_to_sample(
     node = (RTIROS2_GraphNode *) REDAInlineListNode_getNext(&node->list_node);
     node_i += 1;
   }
+  if (!RTIROS2_NodeEntitiesInfoSeq_set_length(
+    &sample->node_entities_info_seq, node_i))
+  {
+    /* TODO(asorbini) Log error */
+    goto done;
+  }
   retcode = DDS_RETCODE_OK;
 done:
   return retcode;
@@ -1066,23 +1097,43 @@ DDS_ReturnCode_t
 RTIROS2_Graph_publish_update(RTIROS2_Graph * const self)
 {
   DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
+  DDS_Long seq_len = 0;
+  DDS_Long i = 0;
+  DDS_DomainParticipant * dp = NULL;
 
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
 
-  if (DDS_RETCODE_OK != RTIROS2_Graph_convert_to_sample(self, self->pinfo))
+  if (DDS_RETCODE_OK !=
+    RTIROS2_Graph_gather_domain_participants(self, &self->participants))
   {
     /* TODO(asorbini) Log error */
     RTIOsapiSemaphore_give(self->mutex_self);
     goto done;
   }
-
   RTIOsapiSemaphore_give(self->mutex_self);
 
-  if (DDS_RETCODE_OK != RTIROS2_Graph_publish_sample(self, self->pinfo))
+  seq_len = DDS_DomainParticipantSeq_get_length(&self->participants);
+
+  for (i = 0; i < seq_len; i++)
   {
-    /* TODO(asorbini) Log error */
-    goto done;
+    dp = *DDS_DomainParticipantSeq_get_reference(&self->participants, i);
+
+    RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
+    if (DDS_RETCODE_OK != RTIROS2_Graph_convert_to_sample(self, dp, self->pinfo))
+    {
+      /* TODO(asorbini) Log error */
+      RTIOsapiSemaphore_give(self->mutex_self);
+      goto done;
+    }
+    RTIOsapiSemaphore_give(self->mutex_self);
+
+    if (DDS_RETCODE_OK != RTIROS2_Graph_publish_sample(self, self->pinfo))
+    {
+      /* TODO(asorbini) Log error */
+      goto done;
+    }
   }
+  
   retcode = DDS_RETCODE_OK;
   
 done:
@@ -1424,5 +1475,74 @@ done:
   DDS_SubscriberSeq_finalize(&subscribers_seq);
   DDS_DataWriterSeq_finalize(&writers_seq);
   DDS_DataReaderSeq_finalize(&readers_seq);
+  return retcode;
+}
+
+static
+DDS_ReturnCode_t
+DDS_DomainParticipantSeq_append_participant(
+  struct DDS_DomainParticipantSeq * const self,
+  DDS_DomainParticipant * const participant)
+{
+  DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
+  DDS_DomainParticipant * dp = NULL;
+  DDS_Long seq_len = 0;
+  DDS_Long i = 0;
+  
+  seq_len = DDS_DomainParticipantSeq_get_length(self);
+  for (i = 0; i < seq_len; i++)
+  {
+    dp = *DDS_DomainParticipantSeq_get_reference(self, i);
+    if (participant == dp)
+    {
+      retcode = DDS_RETCODE_OK;
+      goto done;
+    }
+  }
+
+  if (!DDS_DomainParticipantSeq_ensure_length(self, seq_len + 1, seq_len + 1))
+  {
+    /* TODO(asorbini) Log error */
+    goto done;
+  }
+  
+  *DDS_DomainParticipantSeq_get_reference(self, seq_len) = participant;
+
+  retcode = DDS_RETCODE_OK;
+  
+done:
+  return retcode;
+}
+
+DDS_ReturnCode_t
+RTIROS2_Graph_gather_domain_participants(
+  RTIROS2_Graph * const self,
+  struct DDS_DomainParticipantSeq * const participants)
+{
+  DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
+  RTIROS2_GraphNode * node = NULL;
+
+  if (!DDS_DomainParticipantSeq_set_length(participants, 0))
+  {
+    /* TODO(asorbini) Log error */
+    goto done;
+  }
+
+  node = (RTIROS2_GraphNode*) REDAInlineList_getFirst(&self->nodes);
+  while (NULL != node)
+  {
+    if (DDS_RETCODE_OK !=
+      DDS_DomainParticipantSeq_append_participant(
+        participants, node->dds_participant))
+    {
+      /* TODO(asorbini) Log error */
+      goto done;
+    }
+    node = (RTIROS2_GraphNode*) REDAInlineListNode_getNext(&node->list_node);
+  }
+
+  retcode = DDS_RETCODE_OK;
+
+done:
   return retcode;
 }

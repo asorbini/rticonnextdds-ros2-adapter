@@ -34,7 +34,7 @@ extern "C" {
 
 using namespace std::chrono_literals;
 
-class TestGraph : public ::testing::Test {
+class TestGraphC : public ::testing::Test {
  protected:
   void SetUp() override {
     dds_factory = DDS_DomainParticipantFactory_get_instance();
@@ -83,7 +83,7 @@ class TestGraph : public ::testing::Test {
   DDS_DomainParticipantQos dp_qos = DDS_DomainParticipantQos_INITIALIZER;
 };
 
-TEST_F(TestGraph, new_graph) {
+TEST_F(TestGraphC, new_graph) {
   RTIROS2_GraphProperties props = RTIROS2_GraphProperties_INITIALIZER;
   props.graph_participant = graph_participant;
 
@@ -127,7 +127,7 @@ TEST_F(TestGraph, new_graph) {
   RTIROS2_Graph_delete(another_graph);
 }
 
-TEST_F(TestGraph, new_graph_bad_arguments) {
+TEST_F(TestGraphC, new_graph_bad_arguments) {
   RTIROS2_GraphProperties props = RTIROS2_GraphProperties_INITIALIZER;
   
   // properties must be non-NULL
@@ -142,7 +142,7 @@ TEST_F(TestGraph, new_graph_bad_arguments) {
   RTIROS2_Graph_delete(nullptr);
 }
 
-TEST_F(TestGraph, register_local_node) {
+TEST_F(TestGraphC, register_local_node) {
   RTIROS2_GraphProperties props = RTIROS2_GraphProperties_INITIALIZER;
   props.graph_participant = graph_participant;
   RTIROS2_Graph * graph = RTIROS2_Graph_new(&props);
@@ -188,7 +188,7 @@ TEST_F(TestGraph, register_local_node) {
   RTIROS2_Graph_delete(graph);
 }
 
-TEST_F(TestGraph, register_local_node_bad_args) {
+TEST_F(TestGraphC, register_local_node_bad_args) {
   RTIROS2_GraphProperties props = RTIROS2_GraphProperties_INITIALIZER;
   props.graph_participant = graph_participant;
   RTIROS2_Graph * graph = RTIROS2_Graph_new(&props);
@@ -216,10 +216,10 @@ TEST_F(TestGraph, register_local_node_bad_args) {
   RTIROS2_Graph_delete(graph);
 }
 
-class TestGraphNode : public TestGraph {
+class TestGraphCNode : public TestGraphC {
  protected:
   void SetUp() override {
-    TestGraph::SetUp();
+    TestGraphC::SetUp();
     RTIROS2_GraphProperties props = RTIROS2_GraphProperties_INITIALIZER;
     props.graph_participant = graph_participant;
 
@@ -233,17 +233,17 @@ class TestGraphNode : public TestGraph {
 
   void TearDown() override {
     RTIROS2_Graph_delete(graph);
-    TestGraph::TearDown();
+    TestGraphC::TearDown();
   }
 
   RTIROS2_Graph * graph;
   RTIROS2_GraphNodeHandle node_handle;
 };
 
-class TestGraphEndpoints : public TestGraphNode {
+class TestGraphCEndpoints : public TestGraphCNode {
  protected:
   void SetUp() override {
-    TestGraphNode::SetUp();
+    TestGraphCNode::SetUp();
     DDS_ReturnCode_t rc =
       RTIROS2_StringTypeSupport_register_type(graph_participant, "String");
     ASSERT_EQ(rc, DDS_RETCODE_OK);
@@ -284,7 +284,7 @@ class TestGraphEndpoints : public TestGraphNode {
   }
 
   void TearDown() override {
-    TestGraphNode::TearDown();
+    TestGraphCNode::TearDown();
   }
 
   DDS_DataReader*
@@ -314,7 +314,7 @@ class TestGraphEndpoints : public TestGraphNode {
   DDS_DataWriter * service_writer;
 };
 
-TEST_F(TestGraphEndpoints, register_local_endpoints) {
+TEST_F(TestGraphCEndpoints, register_local_endpoints) {
   RTIROS2_GraphEndpointHandle sub_handle =
     RTIROS2_Graph_register_local_subscription(graph, node_handle, sub_reader);
   ASSERT_NE(sub_handle, RTIROS2_GraphNodeHandle_INVALID);
@@ -406,7 +406,7 @@ TEST_F(TestGraphEndpoints, register_local_endpoints) {
   ASSERT_EQ(another_svc_handle, RTIROS2_GraphNodeHandle_INVALID);
 }
 
-TEST_F(TestGraphEndpoints, register_local_endpoints_bad_args) {
+TEST_F(TestGraphCEndpoints, register_local_endpoints_bad_args) {
   // All DDS endpoints must be non-NULL.
   RTIROS2_GraphEndpointHandle sub_handle =
     RTIROS2_Graph_register_local_subscription(graph, node_handle, nullptr);
@@ -477,10 +477,10 @@ TEST_F(TestGraphEndpoints, register_local_endpoints_bad_args) {
   ASSERT_EQ(svc_handle, RTIROS2_GraphNodeHandle_INVALID);
 }
 
-class TestGraphUpdates : public TestGraphEndpoints {
+class TestGraphCUpdates : public TestGraphCEndpoints {
  protected:
   void SetUp() override {
-    TestGraphEndpoints::SetUp();
+    TestGraphCEndpoints::SetUp();
     // Create a reader for the graph update topic
     DDS_Topic * graph_topic = RTIROS2_Graph_get_graph_topic(graph);
     DDS_DataReaderQos dr_qos = DDS_DataReaderQos_INITIALIZER;
@@ -505,7 +505,7 @@ class TestGraphUpdates : public TestGraphEndpoints {
     ASSERT_EQ(rc, DDS_RETCODE_OK);
     rc = DDS_DomainParticipant_delete_subscriber(graph_participant, graph_sub);
     ASSERT_EQ(rc, DDS_RETCODE_OK);
-    TestGraphEndpoints::TearDown();
+    TestGraphCEndpoints::TearDown();
   }
 
   void wait_and_verify_update()
@@ -555,6 +555,22 @@ class TestGraphUpdates : public TestGraphEndpoints {
     rc = RTIROS2_Graph_compute_participant_gid(
       graph_participant, &graph_participant_gid);
     ASSERT_EQ(rc, DDS_RETCODE_OK);
+  
+    // printf("VERIFY_GID dp=%p\n", graph_participant);
+
+    // printf("RECEIVED: ");
+    // for (size_t i = 0; i < RTIROS2_GID_LENGTH; i++)
+    // {
+    //   printf("%02X ", pinfo->gid.data[i]);
+    // }
+    // printf("\n");
+
+    // printf("EXPECTED: ");
+    // for (size_t i = 0; i < RTIROS2_GID_LENGTH; i++)
+    // {
+    //   printf("%02X ", graph_participant_gid.data[i]);
+    // }
+    // printf("\n");
 
     int cmp_res =
       memcmp(pinfo->gid.data, graph_participant_gid.data, RTIROS2_GID_LENGTH);
@@ -586,7 +602,7 @@ class TestGraphUpdates : public TestGraphEndpoints {
   DDS_Subscriber * graph_sub;
 };
 
-TEST_F(TestGraphUpdates, publish_updates) {
+TEST_F(TestGraphCUpdates, publish_updates) {
   RTIROS2_GraphEndpointHandle sub_handle =
     RTIROS2_Graph_register_local_subscription(graph, node_handle, sub_reader);
   ASSERT_NE(sub_handle, RTIROS2_GraphNodeHandle_INVALID);
@@ -609,7 +625,7 @@ TEST_F(TestGraphUpdates, publish_updates) {
 }
 
 
-TEST_F(TestGraphUpdates, inspect_local_node) {
+TEST_F(TestGraphCUpdates, inspect_local_node) {
   DDS_ReturnCode_t rc = RTIROS2_Graph_inspect_local_node(graph, node_handle);
   ASSERT_EQ(rc, DDS_RETCODE_OK);
 

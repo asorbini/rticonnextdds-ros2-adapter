@@ -58,7 +58,7 @@ RTIROS2_Graph_customize_datawriter_qos(
   writer_qos->resource_limits.max_instances = 1;
   writer_qos->resource_limits.initial_instances = 1;
   writer_qos->resource_limits.max_samples_per_instance = 1;
-  writer_qos->publish_mode.kind = DDS_ASYNCHRONOUS_PUBLISH_MODE_QOS;
+  // writer_qos->publish_mode.kind = DDS_ASYNCHRONOUS_PUBLISH_MODE_QOS;
   
   if (DDS_RETCODE_OK !=
     DDS_PropertyQosPolicyHelper_assert_property(

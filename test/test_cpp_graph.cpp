@@ -25,7 +25,7 @@
 using namespace std::chrono_literals;
 using namespace rti::ros2;
 
-class TestGraph : public ::testing::Test {
+class TestGraphCpp : public ::testing::Test {
  protected:
   void SetUp() override {
     auto qos_provider = dds::core::QosProvider::Default();
@@ -53,7 +53,7 @@ class TestGraph : public ::testing::Test {
   dds::domain::qos::DomainParticipantQos dp_qos;
 };
 
-TEST_F(TestGraph, new_graph) {
+TEST_F(TestGraphCpp, new_graph) {
   GraphProperties props;
   props.graph_participant = graph_participant;
 
@@ -89,7 +89,7 @@ TEST_F(TestGraph, new_graph) {
   ASSERT_NE(ag_writer, g_writer);
 }
 
-TEST_F(TestGraph, new_graph_bad_arguments) {
+TEST_F(TestGraphCpp, new_graph_bad_arguments) {
   GraphProperties props;
 
   // properties must include at least a DomainParticipant.
@@ -106,7 +106,7 @@ TEST_F(TestGraph, new_graph_bad_arguments) {
   }
 }
 
-TEST_F(TestGraph, register_local_node) {
+TEST_F(TestGraphCpp, register_local_node) {
   GraphProperties props;
   props.graph_participant = graph_participant;
   
@@ -146,7 +146,7 @@ TEST_F(TestGraph, register_local_node) {
   ASSERT_EQ(node_handle_4, GraphNodeHandle_INVALID);
 }
 
-TEST_F(TestGraph, register_local_node_bad_args) {
+TEST_F(TestGraphCpp, register_local_node_bad_args) {
   GraphProperties props;
   props.graph_participant = graph_participant;
   Graph graph(props);
@@ -156,10 +156,10 @@ TEST_F(TestGraph, register_local_node_bad_args) {
   ASSERT_EQ(node_handle, GraphNodeHandle_INVALID);
 }
 
-class TestGraphNode : public TestGraph {
+class TestGraphCppNode : public TestGraphCpp {
  protected:
   void SetUp() override {
-    TestGraph::SetUp();
+    TestGraphCpp::SetUp();
     GraphProperties props;
     props.graph_participant = graph_participant;
     graph = std::make_unique<Graph>(props);
@@ -171,17 +171,17 @@ class TestGraphNode : public TestGraph {
 
   void TearDown() override {
     graph.reset();
-    TestGraph::TearDown();
+    TestGraphCpp::TearDown();
   }
 
   std::unique_ptr<Graph> graph;
   GraphNodeHandle node_handle;
 };
 
-class TestGraphEndpoints : public TestGraphNode {
+class TestGraphCppEndpoints : public TestGraphCppNode {
  protected:
   void SetUp() override {
-    TestGraphNode::SetUp();
+    TestGraphCppNode::SetUp();
 
     subscriber = dds::sub::Subscriber(graph_participant);
     ASSERT_NE(subscriber, nullptr);
@@ -219,7 +219,7 @@ class TestGraphEndpoints : public TestGraphNode {
     topic->close();
     subscriber->close();
     publisher->close();
-    TestGraphNode::TearDown();
+    TestGraphCppNode::TearDown();
   }
 
   dds::sub::DataReader<RTIROS2::String>
@@ -245,7 +245,7 @@ class TestGraphEndpoints : public TestGraphNode {
   dds::pub::DataWriter<RTIROS2::String> service_writer{nullptr};
 };
 
-TEST_F(TestGraphEndpoints, register_local_endpoints) {
+TEST_F(TestGraphCppEndpoints, register_local_endpoints) {
   // dds::sub::AnyDataReader sub_reader_a(sub_reader);
   GraphEndpointHandle sub_handle =
     graph->register_local_subscription(node_handle, sub_reader);
@@ -334,7 +334,7 @@ TEST_F(TestGraphEndpoints, register_local_endpoints) {
   ASSERT_EQ(another_svc_handle, GraphNodeHandle_INVALID);
 }
 
-TEST_F(TestGraphEndpoints, register_local_endpoints_bad_args) {
+TEST_F(TestGraphCppEndpoints, register_local_endpoints_bad_args) {
   // The node handle must be valid
   GraphEndpointHandle sub_handle =
     graph->register_local_subscription(GraphNodeHandle_INVALID, sub_reader);
@@ -354,10 +354,10 @@ TEST_F(TestGraphEndpoints, register_local_endpoints_bad_args) {
 }
 
 
-class TestGraphUpdates : public TestGraphEndpoints {
+class TestGraphCppUpdates : public TestGraphCppEndpoints {
  protected:
   void SetUp() override {
-    TestGraphEndpoints::SetUp();
+    TestGraphCppEndpoints::SetUp();
     // Create a reader for the graph update topic
     dds::topic::Topic<RTIROS2::ParticipantEntitiesInfo> graph_topic =
       graph->graph_topic();
@@ -382,13 +382,13 @@ class TestGraphUpdates : public TestGraphEndpoints {
   void TearDown() override {
     graph_reader->close();
     graph_subscriber->close();
-    TestGraphEndpoints::TearDown();
+    TestGraphCppEndpoints::TearDown();
   }
   dds::sub::Subscriber graph_subscriber{nullptr};
   dds::sub::DataReader<RTIROS2::ParticipantEntitiesInfo> graph_reader{nullptr};
 };
 
-TEST_F(TestGraphUpdates, publish_updates) {
+TEST_F(TestGraphCppUpdates, publish_updates) {
   GraphEndpointHandle sub_handle =
     graph->register_local_subscription(node_handle, sub_reader);
   ASSERT_NE(sub_handle, GraphNodeHandle_INVALID);

@@ -104,6 +104,7 @@ struct RTIROS2_GraphI
   DDS_Boolean thread_pinfo_active;
   struct DDS_Duration_t poll_period;
   RTIROS2_GraphSampleAdapter sample_adapter;
+  struct DDS_DomainParticipantSeq participants;
 };
 
 #define RTIROS2_Graph_INITIALIZER \
@@ -127,7 +128,8 @@ struct RTIROS2_GraphI
   NULL /* thread_pinfo */,\
   DDS_BOOLEAN_FALSE /* thread_pinfo_active */,\
   {0, 0} /* poll_period */,\
-  RTIROS2_GraphSampleAdapter_INITIALIZER /* sample_adapter */\
+  RTIROS2_GraphSampleAdapter_INITIALIZER /* sample_adapter */,\
+  DDS_SEQUENCE_INITIALIZER /* participants */\
 }
 
 DDS_ReturnCode_t
@@ -303,10 +305,11 @@ RTIROS2_Graph_inspect_local_nodeEA(
 DDS_ReturnCode_t
 RTIROS2_Graph_convert_to_sample(
   RTIROS2_Graph * const self,
+  DDS_DomainParticipant * const dds_participant,
   void * const sample);
 
-#define RTIROS2_Graph_convert_to_sample(s_, ss_) \
-  ((s_)->sample_adapter.convert_to_sample((s_), (ss_),\
+#define RTIROS2_Graph_convert_to_sample(s_, dp_, ss_) \
+  ((s_)->sample_adapter.convert_to_sample((s_), (dp_), (ss_),\
     (s_)->sample_adapter.adapter_data))
 
 DDS_ReturnCode_t
@@ -335,5 +338,9 @@ RTIROS2_Graph_free_sample(
   ((s_)->sample_adapter.free_sample((s_), (ss_),\
     (s_)->sample_adapter.adapter_data))
 
+DDS_ReturnCode_t
+RTIROS2_Graph_gather_domain_participants(
+  RTIROS2_Graph * const self,
+  struct DDS_DomainParticipantSeq * const participants);
 
 #endif  /* rti_ros2_graph_impl_h */

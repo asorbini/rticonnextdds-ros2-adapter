@@ -52,6 +52,7 @@ typedef enum RTIROS2_GraphEndpointType
 
 typedef DDS_ReturnCode_t (*RTIROS2_GraphSampleAdapter_ConvertToSampleFn)(
   RTIROS2_Graph * const graph,
+  DDS_DomainParticipant * const dds_participant,
   void * const sample,
   void * const adapter_data);
 
@@ -310,6 +311,7 @@ RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
 DDS_ReturnCode_t
 RTIROS2_CGraphSampleAdapter_convert_to_sample(
   RTIROS2_Graph * const self,
+  DDS_DomainParticipant * const dds_participant,
   void * const sample,
   void * const adapter_data);
 

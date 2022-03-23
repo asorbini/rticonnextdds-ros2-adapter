@@ -59,6 +59,7 @@ static
 DDS_ReturnCode_t
 RTIROS2_CppGraphSampleAdapter_convert_to_sample(
   RTIROS2_Graph * const self,
+  DDS_DomainParticipant * const dds_participant,
   void * const vsample,
   void * const adapter_data)
 {
@@ -74,7 +75,8 @@ RTIROS2_CppGraphSampleAdapter_convert_to_sample(
   }
 
   if (DDS_RETCODE_OK !=
-    RTIROS2_CGraphSampleAdapter_convert_to_sample(self, c_sample, nullptr))
+    RTIROS2_CGraphSampleAdapter_convert_to_sample(
+      self, dds_participant, c_sample, nullptr))
   {
     return DDS_RETCODE_ERROR;
   }
