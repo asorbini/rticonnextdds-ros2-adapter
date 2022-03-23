@@ -163,7 +163,7 @@ int main(int argc, char **argv)
   assert(NULL != graph);
 
   node_handle = RTIROS2_Graph_register_local_node(
-    graph, "dds_proxy", NULL, my_participant);
+    graph, "hello_c_adapter", NULL, my_participant);
   assert(RTIROS2_GraphNodeHandle_INVALID != node_handle);
 
   endp_handle = RTIROS2_Graph_register_local_subscription(

@@ -88,7 +88,7 @@ int main(int argc, char **argv)
   g_props.graph_participant = my_participant;
   rti::ros2::Graph graph(g_props);
 
-  auto node_handle = graph.register_local_node("dds_proxy");
+  auto node_handle = graph.register_local_node("hello_cpp_adapter");
   assert(rti::ros2::GraphNodeHandle_INVALID != node_handle);
 
   auto endp_handle = graph.register_local_subscription(node_handle, my_reader);
