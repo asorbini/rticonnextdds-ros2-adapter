@@ -162,7 +162,7 @@ RTIROS2_CppGraphSampleAdapter_alloc_sample(
 {
   UNUSED_ARG(self);
   UNUSED_ARG(adapter_data);
-  return new RTIROS2::ParticipantEntitiesInfo();
+  return new (std::nothrow) RTIROS2::ParticipantEntitiesInfo();
 }
 
 static
