@@ -1,6 +1,6 @@
-# rticonnextdds-ros2-adapter - ROS 2 helper for Connext DDS applications.
+# ROS 2 helper for Connext DDS applications
 
-`rticonnextdds-ros2-adapter` is an opensource C/C++ library to help
+`rticonnextdds-ros2-adapter` is an open-source C/C++ library to help
 applications built with Connext DDS to interact with the
 [ROS 2 graph](https://docs.ros.org/en/rolling/Tutorials/Understanding-ROS2-Nodes.html#the-ros-2-graph) and other components of the ROS 2 ecosystem.
 
@@ -50,8 +50,8 @@ The included examples will only be built if the repository is configured with
 `-DBUILD_EXAMPLES=ON`.
 
 You can find all examples in the installation directory under `bin/`.
-In order to run them, you will have to run `install/lib` to your shared library
-path, e.g. on Linux, assuming you used `-DCMAKE_INSTALL_PREFIX=install`:
+In order to run them, you will have to add `install/lib` to your shared library
+path, e.g. on Linux (assuming that you used `-DCMAKE_INSTALL_PREFIX=install` when configuring the project):
 
 ```sh
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:install/lib"
@@ -61,7 +61,7 @@ The examples are written to work out of the box with some ROS 2 applications. In
 
 ### hello_c_adapter, hello_cpp_adapter
 
-- These examples will listen for messages on ROS 2 topic `"chatter'` and
+- These examples will listen for messages on ROS 2 topic `"chatter"` and
   duplicate them on topic "chatter_dup".
 
 - Use the `talker` node from `demo_nodes_cpp` to generate data,
@@ -84,7 +84,7 @@ The examples are written to work out of the box with some ROS 2 applications. In
 - This example will send a request to the `"list_parameters"` service
   of ROS 2 node `"talker"`.
 
-- Start `demo_nodes_cpp/talker`, the start the client to query it:
+- Start `demo_nodes_cpp/talker`, then start the client to query it:
 
   ```sh
   # Start talker in background (or use a different terminal).
