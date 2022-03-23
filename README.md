@@ -61,7 +61,7 @@ The examples are written to work out of the box with some ROS 2 applications. In
 
 ### hello_c_adapter, hello_cpp_adapter
 
-- These examples will listen for messages on ROS 2 topic `"chatter"` and
+- Examples [hello_c_adapter](examples/c/hello_c_adapter/hello_c_adapter.c) and [hello_c_adapter](examples/cpp/hello_cpp_adapter/hello_cpp_adapter.cpp) will listen for messages on ROS 2 topic `"chatter"` and
   duplicate them on topic "chatter_dup".
 
 - Use the `talker` node from `demo_nodes_cpp` to generate data,
@@ -81,7 +81,7 @@ The examples are written to work out of the box with some ROS 2 applications. In
 
 ### parameters_client_cpp
 
-- This example will send a request to the `"list_parameters"` service
+- Example [parameters_client_cpp](examples/cpp/parameters_cpp/parameters_client_cpp.cpp) will send a request to the `"list_parameters"` service
   of ROS 2 node `"talker"`.
 
 - Start `demo_nodes_cpp/talker`, then start the client to query it:
@@ -95,7 +95,7 @@ The examples are written to work out of the box with some ROS 2 applications. In
 
 ### parameters_service_cpp
 
-- This example will advertise a (fake) `"list_parameters"` service.
+- Example [parameters_service_cpp](examples/cpp/parameters_cpp/parameters_service_cpp.cpp) will advertise a (fake) `"list_parameters"` service.
 
 - Start the service, then use the `ros2 service` utility to interact with it
 
