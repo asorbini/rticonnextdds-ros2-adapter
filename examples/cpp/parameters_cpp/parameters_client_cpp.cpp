@@ -77,6 +77,10 @@ int main(int argc, char **argv)
   rcl_interfaces::srv::dds_::ListParameters_Request_ request;
   request.depth(0);
 
+  // Create a ROS 2 graph object, then register a ROS 2 node
+  // and associate it with the DomainParticipant. 
+  // Let the graph inspect the participant and automatically
+  // detect endpoints which follow the ROS 2 naming conventions.
   rti::ros2::GraphProperties g_props;
   g_props.graph_participant = participant;
   rti::ros2::Graph graph(g_props);

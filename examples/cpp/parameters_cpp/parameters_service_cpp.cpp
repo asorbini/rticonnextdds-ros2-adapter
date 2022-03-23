@@ -80,6 +80,10 @@ int main(int argc, char **argv)
   response.result().names()[1] = "bar";
   response.result().names()[2] = "baz";
 
+  // Create a ROS 2 graph object, then register a ROS 2 node
+  // and associate it with the DomainParticipant. 
+  // Let the graph inspect the participant and automatically
+  // detect endpoints which follow the ROS 2 naming conventions.
   rti::ros2::GraphProperties g_props;
   g_props.graph_participant = participant;
   rti::ros2::Graph graph(g_props);

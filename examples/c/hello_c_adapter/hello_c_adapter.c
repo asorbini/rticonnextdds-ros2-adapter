@@ -157,13 +157,15 @@ int main(int argc, char **argv)
   twriter = StringDataWriter_narrow(my_writer);
   assert(NULL != twriter);
 
-
+  /* Create a ROS 2 graph object, then register a ROS 2 node
+     and associate it with the DomainParticipant. 
+     Register the endpoints as ROS 2 subscriptions/publishers. */
   g_props.graph_participant = my_participant;
   graph = RTIROS2_Graph_new(&g_props);
   assert(NULL != graph);
 
   node_handle = RTIROS2_Graph_register_local_node(
-    graph, "hello_c_adapter", NULL, my_participant);
+    graph, "hello_c_adapter", NULL, NULL);
   assert(RTIROS2_GraphNodeHandle_INVALID != node_handle);
 
   endp_handle = RTIROS2_Graph_register_local_subscription(

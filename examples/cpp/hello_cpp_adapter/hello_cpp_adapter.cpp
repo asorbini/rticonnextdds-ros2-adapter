@@ -84,6 +84,9 @@ int main(int argc, char **argv)
   waitset += my_writer_cond;
   waitset += exit_cond;
 
+  // Create a ROS 2 graph object, then register a ROS 2 node
+  // and associate it with the DomainParticipant. 
+  // Register the endpoints as ROS 2 subscriptions/publishers.
   rti::ros2::GraphProperties g_props;
   g_props.graph_participant = my_participant;
   rti::ros2::Graph graph(g_props);
