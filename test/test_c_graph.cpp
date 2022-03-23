@@ -556,22 +556,6 @@ class TestGraphCUpdates : public TestGraphCEndpoints {
       graph_participant, &graph_participant_gid);
     ASSERT_EQ(rc, DDS_RETCODE_OK);
   
-    // printf("VERIFY_GID dp=%p\n", graph_participant);
-
-    // printf("RECEIVED: ");
-    // for (size_t i = 0; i < RTIROS2_GID_LENGTH; i++)
-    // {
-    //   printf("%02X ", pinfo->gid.data[i]);
-    // }
-    // printf("\n");
-
-    // printf("EXPECTED: ");
-    // for (size_t i = 0; i < RTIROS2_GID_LENGTH; i++)
-    // {
-    //   printf("%02X ", graph_participant_gid.data[i]);
-    // }
-    // printf("\n");
-
     int cmp_res =
       memcmp(pinfo->gid.data, graph_participant_gid.data, RTIROS2_GID_LENGTH);
     ASSERT_EQ(cmp_res, 0);

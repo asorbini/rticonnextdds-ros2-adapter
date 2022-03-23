@@ -1050,13 +1050,6 @@ RTIROS2_CGraphSampleAdapter_convert_to_sample(
 
   RTIROS2_Graph_ih_to_gid(&ih, &sample->gid);
 
-  // printf("CONVERTED: ");
-  // for (size_t i = 0; i < RTIROS2_GID_LENGTH; i++)
-  // {
-  //   printf("%02X ", sample->gid.data[i]);
-  // }
-  // printf("\n");  
-
   if (!RTIROS2_NodeEntitiesInfoSeq_ensure_length(
     &sample->node_entities_info_seq, self->nodes_len, self->nodes_len))
   {
