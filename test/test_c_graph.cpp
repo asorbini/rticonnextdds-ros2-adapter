@@ -248,23 +248,38 @@ class TestGraphEndpoints : public TestGraphNode {
       RTIROS2_StringTypeSupport_register_type(graph_participant, "String");
     ASSERT_EQ(rc, DDS_RETCODE_OK);
 
-    topic = DDS_DomainParticipant_create_topic(graph_participant,
-      "foo", "String", &DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
-    ASSERT_NE(topic, nullptr);
+    topic_pubsub = DDS_DomainParticipant_create_topic(graph_participant,
+      "rt/foo", "String", &DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+    ASSERT_NE(topic_pubsub, nullptr);
 
-    sub_reader = create_reader();
+    sub_reader = create_reader(topic_pubsub);
     ASSERT_NE(sub_reader, nullptr);
-    pub_writer = create_writer();
+    pub_writer = create_writer(topic_pubsub);
     ASSERT_NE(pub_writer, nullptr);
 
-    client_reader = create_reader();
+    topic_req = DDS_DomainParticipant_create_topic(graph_participant,
+      "rq/foo/test_serviceRequest",
+      "String",
+      &DDS_TOPIC_QOS_DEFAULT,
+      NULL,
+      DDS_STATUS_MASK_NONE);
+    ASSERT_NE(topic_req, nullptr);
+    topic_rep = DDS_DomainParticipant_create_topic(graph_participant,
+      "rr/foo/test_serviceReply",
+      "String",
+      &DDS_TOPIC_QOS_DEFAULT,
+      NULL,
+      DDS_STATUS_MASK_NONE);
+    ASSERT_NE(topic_rep, nullptr);
+
+    client_reader = create_reader(topic_rep);
     ASSERT_NE(client_reader, nullptr);
-    client_writer = create_writer();
+    client_writer = create_writer(topic_req);
     ASSERT_NE(client_writer, nullptr);
 
-    service_reader = create_reader();
+    service_reader = create_reader(topic_req);
     ASSERT_NE(service_reader, nullptr);
-    service_writer = create_writer();
+    service_writer = create_writer(topic_rep);
     ASSERT_NE(service_writer, nullptr);
   }
 
@@ -273,7 +288,7 @@ class TestGraphEndpoints : public TestGraphNode {
   }
 
   DDS_DataReader*
-  create_reader()
+  create_reader(DDS_Topic * const topic)
   {
     return DDS_DomainParticipant_create_datareader(
       graph_participant, DDS_Topic_as_topicdescription(topic),
@@ -281,14 +296,16 @@ class TestGraphEndpoints : public TestGraphNode {
   }
 
   DDS_DataWriter*
-  create_writer()
+  create_writer(DDS_Topic * const topic)
   {
     return DDS_DomainParticipant_create_datawriter(
       graph_participant, topic,
         &DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
   }
 
-  DDS_Topic * topic;
+  DDS_Topic * topic_pubsub;
+  DDS_Topic * topic_req;
+  DDS_Topic * topic_rep;
   DDS_DataReader * sub_reader;
   DDS_DataWriter * pub_writer;
   DDS_DataReader * client_reader;
@@ -460,7 +477,6 @@ TEST_F(TestGraphEndpoints, register_local_endpoints_bad_args) {
   ASSERT_EQ(svc_handle, RTIROS2_GraphNodeHandle_INVALID);
 }
 
-
 class TestGraphUpdates : public TestGraphEndpoints {
  protected:
   void SetUp() override {
@@ -492,6 +508,80 @@ class TestGraphUpdates : public TestGraphEndpoints {
     TestGraphEndpoints::TearDown();
   }
 
+  void wait_and_verify_update()
+  {
+    RTIROS2_ParticipantEntitiesInfoDataReader * g_reader =
+      RTIROS2_ParticipantEntitiesInfoDataReader_narrow(graph_reader);
+    
+    // Sleep for a little bit to allow the graph to publish its latest update
+    std::this_thread::sleep_for(100ms);
+
+    // Enable the DataReader now, and wait for it to receive data.
+    DDS_Entity * r_entity = DDS_DataReader_as_entity(graph_reader);
+
+    DDS_ReturnCode_t rc = DDS_Entity_enable(r_entity);
+    ASSERT_EQ(rc, DDS_RETCODE_OK);
+
+    DDS_StatusMask status_changes = DDS_Entity_get_status_changes(r_entity);
+    do {
+      if (!(status_changes & DDS_DATA_AVAILABLE_STATUS))
+      {
+        std::this_thread::sleep_for(100ms);
+      }
+      status_changes = DDS_Entity_get_status_changes(r_entity);
+    } while (!(status_changes & DDS_DATA_AVAILABLE_STATUS));
+
+    DDS_SampleInfoSeq info_seq = DDS_SEQUENCE_INITIALIZER;
+    RTIROS2_ParticipantEntitiesInfoSeq data_seq = DDS_SEQUENCE_INITIALIZER;
+
+    rc = RTIROS2_ParticipantEntitiesInfoDataReader_take(
+      g_reader,
+      &data_seq,
+      &info_seq,
+      DDS_LENGTH_UNLIMITED,
+      DDS_ANY_VIEW_STATE,
+      DDS_ANY_SAMPLE_STATE,
+      DDS_ANY_INSTANCE_STATE);
+    ASSERT_EQ(rc, DDS_RETCODE_OK);
+
+    DDS_Long data_len = RTIROS2_ParticipantEntitiesInfoSeq_get_length(&data_seq);
+    ASSERT_EQ(data_len, 1);
+
+    RTIROS2_ParticipantEntitiesInfo * pinfo =
+      RTIROS2_ParticipantEntitiesInfoSeq_get_reference(&data_seq, 0);
+    ASSERT_NE(pinfo, nullptr);
+
+    RTIROS2_Gid graph_participant_gid;
+    rc = RTIROS2_Graph_compute_participant_gid(
+      graph_participant, &graph_participant_gid);
+    ASSERT_EQ(rc, DDS_RETCODE_OK);
+
+    int cmp_res =
+      memcmp(pinfo->gid.data, graph_participant_gid.data, RTIROS2_GID_LENGTH);
+    ASSERT_EQ(cmp_res, 0);
+
+    DDS_Long nodes_len =
+      RTIROS2_NodeEntitiesInfoSeq_get_length(&pinfo->node_entities_info_seq);
+    ASSERT_EQ(nodes_len, 1);
+
+    RTIROS2_NodeEntitiesInfo * ninfo =
+      RTIROS2_NodeEntitiesInfoSeq_get_reference(
+        &pinfo->node_entities_info_seq, 0);
+    ASSERT_NE(ninfo, nullptr);
+
+    ASSERT_EQ(strcmp(ninfo->node_name, "foo"), 0);
+    ASSERT_EQ(strcmp(ninfo->node_namespace, "/"), 0);
+
+    DDS_Long readers_len = RTIROS2_GidSeq_get_length(&ninfo->reader_gid_seq);
+    ASSERT_EQ(readers_len, 3);
+    DDS_Long writers_len = RTIROS2_GidSeq_get_length(&ninfo->writer_gid_seq);
+    ASSERT_EQ(writers_len, 3);
+
+    rc = RTIROS2_ParticipantEntitiesInfoDataReader_return_loan(
+      g_reader, &data_seq, &info_seq);
+    ASSERT_EQ(rc, DDS_RETCODE_OK);
+  }
+
   DDS_DataReader * graph_reader;
   DDS_Subscriber * graph_sub;
 };
@@ -515,74 +605,13 @@ TEST_F(TestGraphUpdates, publish_updates) {
       graph, node_handle, service_reader, service_writer);
   ASSERT_NE(svc_handle, RTIROS2_GraphNodeHandle_INVALID);
 
-  RTIROS2_ParticipantEntitiesInfoDataReader * g_reader =
-    RTIROS2_ParticipantEntitiesInfoDataReader_narrow(graph_reader);
+  wait_and_verify_update();
+}
 
-  // Sleep for a little bit to allow the graph to publish its latest update
-  std::this_thread::sleep_for(100ms);
 
-  // Enable the DataReader now, and wait for it to receive data.
-  DDS_Entity * r_entity = DDS_DataReader_as_entity(graph_reader);
-
-  DDS_ReturnCode_t rc = DDS_Entity_enable(r_entity);
+TEST_F(TestGraphUpdates, inspect_local_node) {
+  DDS_ReturnCode_t rc = RTIROS2_Graph_inspect_local_node(graph, node_handle);
   ASSERT_EQ(rc, DDS_RETCODE_OK);
 
-  DDS_StatusMask status_changes = DDS_Entity_get_status_changes(r_entity);
-  do {
-    if (!(status_changes & DDS_DATA_AVAILABLE_STATUS))
-    {
-      std::this_thread::sleep_for(100ms);
-    }
-    status_changes = DDS_Entity_get_status_changes(r_entity);
-  } while (!(status_changes & DDS_DATA_AVAILABLE_STATUS));
-
-  DDS_SampleInfoSeq info_seq = DDS_SEQUENCE_INITIALIZER;
-  RTIROS2_ParticipantEntitiesInfoSeq data_seq = DDS_SEQUENCE_INITIALIZER;
-
-  rc = RTIROS2_ParticipantEntitiesInfoDataReader_take(
-    g_reader,
-    &data_seq,
-    &info_seq,
-    DDS_LENGTH_UNLIMITED,
-    DDS_ANY_VIEW_STATE,
-    DDS_ANY_SAMPLE_STATE,
-    DDS_ANY_INSTANCE_STATE);
-  ASSERT_EQ(rc, DDS_RETCODE_OK);
-
-  DDS_Long data_len = RTIROS2_ParticipantEntitiesInfoSeq_get_length(&data_seq);
-  ASSERT_EQ(data_len, 1);
-
-  RTIROS2_ParticipantEntitiesInfo * pinfo =
-    RTIROS2_ParticipantEntitiesInfoSeq_get_reference(&data_seq, 0);
-  ASSERT_NE(pinfo, nullptr);
-
-  RTIROS2_Gid graph_participant_gid;
-  rc = RTIROS2_Graph_compute_participant_gid(
-    graph_participant, &graph_participant_gid);
-  ASSERT_EQ(rc, DDS_RETCODE_OK);
-
-  int cmp_res =
-    memcmp(pinfo->gid.data, graph_participant_gid.data, RTIROS2_GID_LENGTH);
-  ASSERT_EQ(cmp_res, 0);
-
-  DDS_Long nodes_len =
-    RTIROS2_NodeEntitiesInfoSeq_get_length(&pinfo->node_entities_info_seq);
-  ASSERT_EQ(nodes_len, 1);
-
-  RTIROS2_NodeEntitiesInfo * ninfo =
-    RTIROS2_NodeEntitiesInfoSeq_get_reference(
-      &pinfo->node_entities_info_seq, 0);
-  ASSERT_NE(ninfo, nullptr);
-
-  ASSERT_EQ(strcmp(ninfo->node_name, "foo"), 0);
-  ASSERT_EQ(strcmp(ninfo->node_namespace, ""), 0);
-
-  DDS_Long readers_len = RTIROS2_GidSeq_get_length(&ninfo->reader_gid_seq);
-  ASSERT_EQ(readers_len, 3);
-  DDS_Long writers_len = RTIROS2_GidSeq_get_length(&ninfo->writer_gid_seq);
-  ASSERT_EQ(writers_len, 3);
-
-  rc = RTIROS2_ParticipantEntitiesInfoDataReader_return_loan(
-    g_reader, &data_seq, &info_seq);
-  ASSERT_EQ(rc, DDS_RETCODE_OK);
+  wait_and_verify_update();
 }

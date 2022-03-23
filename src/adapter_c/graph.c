@@ -343,6 +343,11 @@ RTIROS2_Graph_inspect_local_node(
   }
 
   retcode = RTIROS2_Graph_inspect_local_nodeEA(self, node);
+
+  if (DDS_RETCODE_OK == retcode)
+  {
+    RTIROS2_Graph_queue_update(self);
+  }
   
 done:
   RTIOsapiSemaphore_give(self->mutex_self);
@@ -363,6 +368,10 @@ RTIROS2_Graph_register_local_subscription(
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
   result = RTIROS2_Graph_register_local_subscriptionEA(
     self, node_handle, sub_reader);
+  if (RTIROS2_GraphEndpointHandle_INVALID != result)
+  {
+    RTIROS2_Graph_queue_update(self);
+  }
   RTIOsapiSemaphore_give(self->mutex_self);
   return result;
 }
@@ -381,6 +390,10 @@ RTIROS2_Graph_register_local_publisher(
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
   result = RTIROS2_Graph_register_local_publisherEA(
     self, node_handle, pub_writer);
+  if (RTIROS2_GraphEndpointHandle_INVALID != result)
+  {
+    RTIROS2_Graph_queue_update(self);
+  }
   RTIOsapiSemaphore_give(self->mutex_self);
   return result;
 }
@@ -400,6 +413,10 @@ RTIROS2_Graph_register_local_client(
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
   result = RTIROS2_Graph_register_local_clientEA(
     self, node_handle, client_reader, client_writer);
+  if (RTIROS2_GraphEndpointHandle_INVALID != result)
+  {
+    RTIROS2_Graph_queue_update(self);
+  }
   RTIOsapiSemaphore_give(self->mutex_self);
   return result;
 }
@@ -419,6 +436,10 @@ RTIROS2_Graph_register_local_service(
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
   result = RTIROS2_Graph_register_local_serviceEA(
     self, node_handle, service_reader, service_writer);
+  if (RTIROS2_GraphEndpointHandle_INVALID != result)
+  {
+    RTIROS2_Graph_queue_update(self);
+  }
   RTIOsapiSemaphore_give(self->mutex_self);
   return result;
 }

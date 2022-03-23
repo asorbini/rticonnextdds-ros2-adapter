@@ -1,0 +1,22 @@
+module rcl_interfaces {
+module srv {
+module dds_ {
+const uint64 DEPTH_RECURSIVE =  0;
+
+struct ListParameters_Request_ {
+  sequence<string> prefixes;
+  uint64 depth;
+};
+
+@nested
+struct ListParametersResult {
+  sequence<string> names;
+  sequence<string> prefixes;
+};
+
+struct ListParameters_Response_ {
+  ListParametersResult result;
+};
+}; // module dds_ 
+}; // module srv
+}; // module rcl_interfacs

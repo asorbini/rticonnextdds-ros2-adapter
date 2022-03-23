@@ -476,7 +476,8 @@ RTIROS2_Graph_lookup_local_node_by_name(
   while (NULL != node)
   {
     if (strcmp(node->node_name, node_name) == 0 &&
-      ((NULL == node->node_namespace && NULL == node_namespace) ||
+      ((strcmp(node->node_namespace, "/") == 0 &&
+          (NULL == node_namespace || strcmp(node_namespace, "/") == 0)) ||
       (NULL != node->node_namespace && NULL != node_namespace &&
         strcmp(node->node_namespace, node_namespace) == 0)))
     {
@@ -571,18 +572,19 @@ RTIROS2_Graph_lookup_local_endpoint_by_topic_name(
   UNUSED_ARG(self);
   while (NULL != endp)
   {
-    if (writer)
+    endp_topic_name = NULL;
+    if (writer && NULL != endp->dds_writer)
     {
       endp_topic_name = DDS_TopicDescription_get_name(
         DDS_Topic_as_topicdescription(
           DDS_DataWriter_get_topic(endp->dds_writer)));
     }
-    else
+    else if (NULL != endp->dds_reader)
     {
       endp_topic_name = DDS_TopicDescription_get_name(
         DDS_DataReader_get_topicdescription(endp->dds_reader));
     }
-    if (strcmp(topic_name, endp_topic_name) == 0)
+    if (NULL != endp_topic_name && strcmp(topic_name, endp_topic_name) == 0)
     {
       return endp;
     }
@@ -645,8 +647,6 @@ RTIROS2_Graph_register_local_subscriptionEA(
     goto done;
   }
 
-  RTIROS2_Graph_queue_update(self);
-
   result = endp->handle;
   
 done:
@@ -684,8 +684,6 @@ RTIROS2_Graph_register_local_publisherEA(
     /* TODO(asorbini) Log error */
     goto done;
   }
-
-  RTIROS2_Graph_queue_update(self);
 
   result = endp->handle;
   
@@ -726,8 +724,6 @@ RTIROS2_Graph_register_local_clientEA(
     goto done;
   }
 
-  RTIROS2_Graph_queue_update(self);
-
   result = endp->handle;
   
 done:
@@ -767,8 +763,6 @@ RTIROS2_Graph_register_local_serviceEA(
     /* TODO(asorbini) Log error */
     goto done;
   }
-
-  RTIROS2_Graph_queue_update(self);
 
   result = endp->handle;
   
@@ -1336,6 +1330,7 @@ RTIROS2_Graph_inspect_local_nodeEA(
   }
 
   seq_len = DDS_SubscriberSeq_get_length(&subscribers_seq);
+
   for (i = 0; i < seq_len; i++)
   {
     sub = *DDS_SubscriberSeq_get_reference(&subscribers_seq, i);
@@ -1350,7 +1345,7 @@ RTIROS2_Graph_inspect_local_nodeEA(
     {
       dr = *DDS_DataReaderSeq_get_reference(&readers_seq, j);
       endp = RTIROS2_Graph_lookup_local_endpoint_by_dds_endpoints(
-        self, node, NULL, dw);
+        self, node, dr, NULL);
       if (NULL != endp)
       {
         continue;
