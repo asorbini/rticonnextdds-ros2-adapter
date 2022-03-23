@@ -1,9 +1,6 @@
-module rcl_interfaces {
-module srv {
-module dds_ {
 const uint64 DEPTH_RECURSIVE =  0;
 
-struct ListParameters_Request_ {
+struct ListParametersRequest {
   sequence<string> prefixes;
   uint64 depth;
 };
@@ -14,9 +11,19 @@ struct ListParametersResult {
   sequence<string> prefixes;
 };
 
-struct ListParameters_Response_ {
+struct ListParametersResponse {
   ListParametersResult result;
 };
+
+// The Requester API does not currently allow users to customize the type name
+// used by a Requester's (or Replier's) topics. In order to interoperate with
+// ROS 2 we define two aliases for the request and response types which
+// conform with the ROS 2 naming conventions.
+module rcl_interfaces {
+module srv {
+module dds_ {
+  typedef ListParametersRequest ListParameters_Request_;
+  typedef ListParametersResponse ListParameters_Response_;
 }; // module dds_ 
 }; // module srv
 }; // module rcl_interfacs
