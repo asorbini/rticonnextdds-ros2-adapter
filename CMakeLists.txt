@@ -226,4 +226,5 @@ endif()
 
 if(BUILD_EXAMPLES)
   add_subdirectory(examples/hello_c_adapter)
+  add_subdirectory(examples/hello_cpp_adapter)
 endif()
