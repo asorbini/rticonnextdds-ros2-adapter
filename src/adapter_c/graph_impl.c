@@ -608,21 +608,30 @@ RTIROS2_Graph_lookup_local_endpoint_by_topic_name(
 }
 
 RTIROS2_GraphEndpointType_t
-RTIROS2_Graph_detect_topic_type(
+RTIROS2_Graph_detect_endpoint_type(
   const char * const topic_name,
   const DDS_Boolean writer)
 {
-  if (strncmp(topic_name, "rt/", 3) == 0)
+  if (strncmp(
+    topic_name,
+    RTIROS2_TOPIC_PREFIX_DEFAULT,
+    strlen(RTIROS2_TOPIC_PREFIX_DEFAULT)) == 0)
   {
     return (writer)?
       RTIROS2_GRAPH_ENDPOINT_PUBLISHER : RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION;
   }
-  else if (strncmp(topic_name, "rr/", 3) == 0)
+  else if (strncmp(
+    topic_name,
+    RTIROS2_TOPIC_PREFIX_RESPONSE,
+    strlen(RTIROS2_TOPIC_PREFIX_RESPONSE)) == 0)
   {
     return (writer)?
       RTIROS2_GRAPH_ENDPOINT_SERVICE : RTIROS2_GRAPH_ENDPOINT_CLIENT;
   }
-  else if (strncmp(topic_name, "rq/", 3) == 0)
+  else if (strncmp(
+    topic_name,
+    RTIROS2_TOPIC_PREFIX_REQUEST,
+    strlen(RTIROS2_TOPIC_PREFIX_REQUEST)) == 0)
   {
     return (writer)?
       RTIROS2_GRAPH_ENDPOINT_CLIENT : RTIROS2_GRAPH_ENDPOINT_SERVICE;
@@ -1300,7 +1309,7 @@ RTIROS2_Graph_inspect_local_nodeEA(
       topic_name = DDS_TopicDescription_get_name(
         DDS_Topic_as_topicdescription(
           DDS_DataWriter_get_topic(dw)));
-      endp_type = RTIROS2_Graph_detect_topic_type(topic_name, DDS_BOOLEAN_TRUE);
+      endp_type = RTIROS2_Graph_detect_endpoint_type(topic_name, DDS_BOOLEAN_TRUE);
       switch (endp_type)
       {
       case RTIROS2_GRAPH_ENDPOINT_PUBLISHER:
@@ -1396,7 +1405,7 @@ RTIROS2_Graph_inspect_local_nodeEA(
       }
       topic_name = DDS_TopicDescription_get_name(
         DDS_DataReader_get_topicdescription(dr));
-      endp_type = RTIROS2_Graph_detect_topic_type(topic_name, DDS_BOOLEAN_FALSE);
+      endp_type = RTIROS2_Graph_detect_endpoint_type(topic_name, DDS_BOOLEAN_FALSE);
       switch (endp_type)
       {
       case RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION:

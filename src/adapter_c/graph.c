@@ -20,6 +20,20 @@ const char * const RTIROS2_GRAPH_TOPIC_NAME = "ros_discovery_info";
 const char * const RTIROS2_GRAPH_TYPE_NAME =
   "rmw_dds_common::msg::dds_::ParticipantEntitiesInfo_";
 
+const char * const RTIROS2_TOPIC_PREFIX_DEFAULT = "rt/";
+
+const char * const RTIROS2_TOPIC_PREFIX_REQUEST = "rq/";
+
+const char * const RTIROS2_TOPIC_PREFIX_RESPONSE = "rr/";
+
+const char * const RTIROS2_TYPE_NAMESPACE = "dds_";
+
+const char * const RTIROS2_TYPE_SUFFIX_DEFAULT = "_";
+
+const char * const RTIROS2_TYPE_SUFFIX_REQUEST = "_Request_";
+
+const char * const RTIROS2_TYPE_SUFFIX_RESPONSE = "_Response_";
+
 DDS_ReturnCode_t
 RTIROS2_Graph_customize_datawriter_qos(
   struct DDS_DataWriterQos * const writer_qos)
@@ -847,6 +861,224 @@ RTIROS2_Graph_compute_writer_gid(
   RTIROS2_Graph_ih_to_gid(&ih, gid);
 
   retcode = DDS_RETCODE_OK;
+  
+done:
+  return retcode;
+}
+
+static
+DDS_ReturnCode_t
+RTIROS2_Graph_make_dds_topic_and_type_names(
+  const char * const ros2_topic_name,
+  const char * const ros2_type_name,
+  char * const dds_topic_name,
+  size_t * const dds_topic_name_len,
+  char * const dds_type_name,
+  size_t * const dds_type_name_len,
+  const char * const topic_prefix,
+  const char * const type_suffix)
+{
+  DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
+  const char * type_stem = NULL;
+  size_t topic_name_len = 0;
+  size_t topic_prefix_len = 0;
+  size_t ros2_topic_len = 0;
+  size_t ros2_type_len = 0;
+  size_t type_name_len = 0;
+  size_t type_suffix_len = 0;
+  size_t type_ns_len = 0;
+  size_t type_stem_len = 0;
+
+  ros2_topic_len = strlen(ros2_topic_name);
+  topic_prefix_len = strlen(topic_prefix);
+
+  topic_name_len = topic_prefix_len + ros2_topic_len;
+
+  ros2_type_len = strlen(ros2_type_name);
+  type_ns_len = strlen(RTIROS2_TYPE_NAMESPACE);
+  type_suffix_len = strlen(type_suffix);
+
+  type_name_len =
+    ros2_type_len + type_ns_len + type_suffix_len + 
+    2 /* to account for the additional "::" to insert the namespace */;
+
+  if (NULL != dds_topic_name)
+  {
+    if (*dds_topic_name_len < (topic_name_len + 1))
+    {
+      retcode = DDS_RETCODE_OUT_OF_RESOURCES;
+      goto done;
+    }
+
+    memcpy(dds_topic_name, topic_prefix, topic_prefix_len);
+    memcpy(dds_topic_name + topic_prefix_len,
+      ros2_topic_name, ros2_topic_len + 1);
+  }
+
+  *dds_topic_name_len = topic_name_len + 1;
+
+  if (NULL != dds_type_name)
+  {
+    if (*dds_type_name_len < (type_name_len + 1))
+    {
+      retcode = DDS_RETCODE_OUT_OF_RESOURCES;
+      goto done;
+    }
+
+    /* Search for the first instance of "::" */
+    type_stem = ros2_type_name + ros2_type_len;
+    while (type_stem[0] != ':' && type_stem > ros2_type_name)
+    {
+      type_stem -= 1;
+    }
+    if (type_stem[0] != ':' ||
+      type_stem == ros2_type_name ||
+      *(type_stem - 1) != ':' )
+    {
+      /* Invalid ROS 2 type name */
+      retcode = DDS_RETCODE_BAD_PARAMETER;
+      goto done;
+    }
+
+    type_stem -= 1;
+    type_stem_len = type_stem - ros2_type_name;
+
+    memcpy(dds_type_name, ros2_type_name, type_stem_len);
+    memcpy(dds_type_name + type_stem_len, RTIROS2_TYPE_NAMESPACE, type_ns_len);
+    memcpy(dds_type_name + type_stem_len + type_ns_len, "::", 2);
+    memcpy(dds_type_name + type_stem_len + type_ns_len + 2,
+      type_suffix, type_suffix_len);
+  }
+  
+  *dds_type_name_len = type_name_len + 1;
+
+  retcode = DDS_RETCODE_OK;
+  
+done:
+  return retcode;
+}
+
+DDS_ReturnCode_t
+RTIROS2_Graph_compute_writer_topic_names(
+  const char * const ros2_topic_name,
+  const char * const ros2_type_name,
+  const RTIROS2_GraphEndpointType_t ros2_endp_type,
+  char * const dds_topic_name,
+  size_t * const dds_topic_name_len,
+  char * const dds_type_name,
+  size_t * const dds_type_name_len)
+{
+  DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
+  const char * topic_prefix = NULL;
+  const char * type_suffix = NULL;
+
+  if (NULL == ros2_topic_name || ros2_topic_name[0] == '\0' ||
+    NULL == ros2_type_name || ros2_type_name[0] == '\0')
+  {
+    retcode = DDS_RETCODE_BAD_PARAMETER;
+    goto done;
+  }
+
+  switch (ros2_endp_type)
+  {
+  case RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION:
+  case RTIROS2_GRAPH_ENDPOINT_PUBLISHER:
+  {
+    topic_prefix = RTIROS2_TOPIC_PREFIX_DEFAULT;
+    type_suffix = RTIROS2_TYPE_SUFFIX_DEFAULT;
+    break;
+  }
+  case RTIROS2_GRAPH_ENDPOINT_CLIENT:
+  {
+    topic_prefix = RTIROS2_TOPIC_PREFIX_REQUEST;
+    type_suffix = RTIROS2_TYPE_SUFFIX_REQUEST;
+    break;
+  }
+  case RTIROS2_GRAPH_ENDPOINT_SERVICE:
+  {
+    topic_prefix = RTIROS2_TOPIC_PREFIX_RESPONSE;
+    type_suffix = RTIROS2_TYPE_SUFFIX_RESPONSE;
+    break;
+  }
+  default:
+  {
+    retcode = DDS_RETCODE_ERROR;
+    goto done;
+  }
+  }
+
+  retcode = RTIROS2_Graph_make_dds_topic_and_type_names(
+    ros2_topic_name,
+    ros2_type_name,
+    dds_topic_name,
+    dds_topic_name_len,
+    dds_type_name,
+    dds_type_name_len,
+    topic_prefix,
+    type_suffix);
+  
+done:
+  return retcode;
+}
+
+DDS_ReturnCode_t
+RTIROS2_Graph_compute_reader_topic_names(
+  const char * const ros2_topic_name,
+  const char * const ros2_type_name,
+  const RTIROS2_GraphEndpointType_t ros2_endp_type,
+  char * const dds_topic_name,
+  size_t * const dds_topic_name_len,
+  char * const dds_type_name,
+  size_t * const dds_type_name_len)
+{
+  DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
+  const char * topic_prefix = NULL;
+  const char * type_suffix = NULL;
+
+  // if (NULL == ros2_topic_name || ros2_topic_name[0] == '\0' ||
+  //   NULL == ros2_type_name || ros2_type_name[0] == '\0')
+  // {
+  //   retcode = DDS_RETCODE_BAD_PARAMETER;
+  //   goto done;
+  // }
+
+  switch (ros2_endp_type)
+  {
+  case RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION:
+  case RTIROS2_GRAPH_ENDPOINT_PUBLISHER:
+  {
+    topic_prefix = RTIROS2_TOPIC_PREFIX_DEFAULT;
+    type_suffix = RTIROS2_TYPE_SUFFIX_DEFAULT;
+    break;
+  }
+  case RTIROS2_GRAPH_ENDPOINT_CLIENT:
+  {
+    topic_prefix = RTIROS2_TOPIC_PREFIX_RESPONSE;
+    type_suffix = RTIROS2_TYPE_SUFFIX_RESPONSE;
+    break;
+  }
+  case RTIROS2_GRAPH_ENDPOINT_SERVICE:
+  {
+    topic_prefix = RTIROS2_TOPIC_PREFIX_REQUEST;
+    type_suffix = RTIROS2_TYPE_SUFFIX_REQUEST;
+    break;
+  }
+  default:
+  {
+    retcode = DDS_RETCODE_ERROR;
+    goto done;
+  }
+  }
+
+  retcode = RTIROS2_Graph_make_dds_topic_and_type_names(
+    ros2_topic_name,
+    ros2_type_name,
+    dds_topic_name,
+    dds_topic_name_len,
+    dds_type_name,
+    dds_type_name_len,
+    topic_prefix,
+    type_suffix);
   
 done:
   return retcode;

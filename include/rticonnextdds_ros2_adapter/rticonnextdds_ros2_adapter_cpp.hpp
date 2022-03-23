@@ -33,6 +33,33 @@ extern const char * const GRAPH_TOPIC_NAME;
 RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
 extern const char * const GRAPH_TYPE_NAME;
 
+typedef RTIROS2_GraphNodeHandle GraphNodeHandle;
+typedef RTIROS2_GraphEndpointHandle GraphEndpointHandle;
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+extern const GraphNodeHandle GraphNodeHandle_INVALID;
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+extern const GraphEndpointHandle GraphEndpointHandle_INVALID;
+
+enum class GraphEndpointType
+{
+  Unknown = RTIROS2_GRAPH_ENDPOINT_UNKNOWN,
+  Subscription = RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION,
+  Publisher = RTIROS2_GRAPH_ENDPOINT_PUBLISHER,
+  Client = RTIROS2_GRAPH_ENDPOINT_CLIENT,
+  Service = RTIROS2_GRAPH_ENDPOINT_SERVICE
+};
+
+struct GraphProperties
+{
+  dds::domain::DomainParticipant graph_participant{nullptr};
+  dds::pub::Publisher graph_publisher{nullptr};
+  dds::topic::Topic<RTIROS2::ParticipantEntitiesInfo> graph_topic{nullptr};
+  dds::pub::DataWriter<RTIROS2::ParticipantEntitiesInfo> graph_writer{nullptr};
+  DDS_Duration_t poll_period = {0, 0};
+};
+
 namespace graph {
   RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
   void
@@ -61,34 +88,25 @@ namespace graph {
   compute_writer_gid(
     dds::pub::AnyDataWriter & dds_writer,
     RTIROS2::Gid & gid);
+  
+  RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+  void
+  compute_writer_topic_names(
+    const std::string & ros2_topic_name,
+    const std::string & ros2_type_name,
+    const GraphEndpointType ros2_endp_type,
+    std::string & dds_topic_name,
+    std::string & dds_type_name);
+
+  RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+  void
+  compute_reader_topic_names(
+    const std::string & ros2_topic_name,
+    const std::string & ros2_type_name,
+    const GraphEndpointType ros2_endp_type,
+    std::string & dds_topic_name,
+    std::string & dds_type_name);
 }  // namespace graph
-
-typedef RTIROS2_GraphNodeHandle GraphNodeHandle;
-typedef RTIROS2_GraphEndpointHandle GraphEndpointHandle;
-
-RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
-extern const GraphNodeHandle GraphNodeHandle_INVALID;
-
-RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
-extern const GraphEndpointHandle GraphEndpointHandle_INVALID;
-
-enum class GraphEndpointType
-{
-  Unknown = RTIROS2_GRAPH_ENDPOINT_UNKNOWN,
-  Subscription = RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION,
-  Publisher = RTIROS2_GRAPH_ENDPOINT_PUBLISHER,
-  Client = RTIROS2_GRAPH_ENDPOINT_CLIENT,
-  Service = RTIROS2_GRAPH_ENDPOINT_SERVICE
-};
-
-struct GraphProperties
-{
-  dds::domain::DomainParticipant graph_participant{nullptr};
-  dds::pub::Publisher graph_publisher{nullptr};
-  dds::topic::Topic<RTIROS2::ParticipantEntitiesInfo> graph_topic{nullptr};
-  dds::pub::DataWriter<RTIROS2::ParticipantEntitiesInfo> graph_writer{nullptr};
-  DDS_Duration_t poll_period = {0, 0};
-};
 
 class Graph {
 public:

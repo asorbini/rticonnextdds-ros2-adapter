@@ -34,6 +34,28 @@ extern const char * const RTIROS2_GRAPH_TOPIC_NAME;
 RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
 extern const char * const RTIROS2_GRAPH_TYPE_NAME;
 
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+extern const char * const RTIROS2_TOPIC_PREFIX_DEFAULT;
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+extern const char * const RTIROS2_TOPIC_PREFIX_REQUEST;
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+extern const char * const RTIROS2_TOPIC_PREFIX_RESPONSE;
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+extern const char * const RTIROS2_TYPE_NAMESPACE;
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+extern const char * const RTIROS2_TYPE_SUFFIX_DEFAULT;
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+extern const char * const RTIROS2_TYPE_SUFFIX_REQUEST;
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+extern const char * const RTIROS2_TYPE_SUFFIX_RESPONSE;
+
+
 typedef struct RTIROS2_GraphI RTIROS2_Graph;
 typedef DDS_Long RTIROS2_GraphNodeHandle;
 typedef DDS_Long RTIROS2_GraphEndpointHandle;
@@ -306,6 +328,28 @@ RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
 DDS_ReturnCode_t
 RTIROS2_Graph_compute_writer_gid(
   DDS_DataWriter * const dds_writer, RTIROS2_Gid * const gid);
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+DDS_ReturnCode_t
+RTIROS2_Graph_compute_writer_topic_names(
+  const char * const ros2_topic_name,
+  const char * const ros2_type_name,
+  const RTIROS2_GraphEndpointType_t ros2_endp_type,
+  char * const dds_topic_name,
+  size_t * const dds_topic_name_len,
+  char * const dds_type_name,
+  size_t * const dds_type_name_len);
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+DDS_ReturnCode_t
+RTIROS2_Graph_compute_reader_topic_names(
+  const char * const ros2_topic_name,
+  const char * const ros2_type_name,
+  const RTIROS2_GraphEndpointType_t ros2_endp_type,
+  char * const dds_topic_name,
+  size_t * const dds_topic_name_len,
+  char * const dds_type_name,
+  size_t * const dds_type_name_len);
 
 RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
 DDS_ReturnCode_t

@@ -145,7 +145,7 @@ RTIROS2_Graph_finalize(RTIROS2_Graph * const self);
     !DDS_Duration_is_infinite(&(s_)->poll_period))
 
 RTIROS2_GraphEndpointType_t
-RTIROS2_Graph_detect_topic_type(
+RTIROS2_Graph_detect_endpoint_type(
   const char * const topic_name,
   const DDS_Boolean writer);
 
