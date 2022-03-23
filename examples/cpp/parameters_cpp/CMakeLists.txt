@@ -13,7 +13,7 @@
 # limitations under the License.
 cmake_minimum_required(VERSION 3.5)
 
-project(parameters_client_cpp CXX)
+project(parameters_cpp CXX)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Wimplicit-fallthrough)
@@ -75,21 +75,41 @@ add_custom_command(OUTPUT ${generated_code}
   DEPENDS ${idl_file})
 
 
-add_executable(${PROJECT_NAME}
+add_executable(parameters_client_cpp
   parameters_client_cpp.cpp
   ${generated_code}
 )
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(parameters_client_cpp
   rticonnextdds_ros2_adapter_cpp
   RTIConnextDDS::messaging_cpp2_api
 )
-target_include_directories(${PROJECT_NAME}
+target_include_directories(parameters_client_cpp
   PRIVATE
     "${generated_code_dir}"
 )
 
-install(TARGETS ${PROJECT_NAME}
-  EXPORT export_${PROJECT_NAME}
+install(TARGETS parameters_client_cpp
+  EXPORT export_parameters_client_cpp
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+add_executable(parameters_service_cpp
+  parameters_service_cpp.cpp
+  ${generated_code}
+)
+target_link_libraries(parameters_service_cpp
+  rticonnextdds_ros2_adapter_cpp
+  RTIConnextDDS::messaging_cpp2_api
+)
+target_include_directories(parameters_service_cpp
+  PRIVATE
+    "${generated_code_dir}"
+)
+
+install(TARGETS parameters_service_cpp
+  EXPORT export_parameters_service_cpp
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin

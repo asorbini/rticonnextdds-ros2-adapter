@@ -17,7 +17,7 @@
 #include <thread>
 #include <chrono>
 
-#include <rti/request/Requester.hpp>
+#include <rti/request/Replier.hpp>
 
 #include "rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_cpp.hpp"
 
@@ -29,8 +29,8 @@ using namespace std::chrono_literals;
 int main(int argc, char **argv)
 {
   (void)argc; (void)argv;
-  static const char * const topic_name_req = "rq/talker/list_parametersRequest";
-  static const char * const topic_name_rep = "rr/talker/list_parametersReply";
+  static const char * const topic_name_req = "rq/foo/list_parametersRequest";
+  static const char * const topic_name_rep = "rr/foo/list_parametersReply";
 
   dds::domain::DomainParticipant participant(0);
   assert(nullptr != participant);
@@ -61,53 +61,49 @@ int main(int argc, char **argv)
     }, false);
   dr_qos << dr_props;
 
-  rti::request::RequesterParams req_params(participant);
-  req_params.request_topic_name(topic_name_req);
-  req_params.reply_topic_name(topic_name_rep);
-  req_params.datawriter_qos(dw_qos);
-  req_params.datareader_qos(dr_qos);
-  req_params.publisher(publisher);
-  req_params.subscriber(subscriber);
+  rti::request::ReplierParams rep_params(participant);
+  rep_params.request_topic_name(topic_name_req);
+  rep_params.reply_topic_name(topic_name_rep);
+  rep_params.datawriter_qos(dw_qos);
+  rep_params.datareader_qos(dr_qos);
+  rep_params.publisher(publisher);
+  rep_params.subscriber(subscriber);
 
-  rti::request::Requester<
+  rti::request::Replier<
     rcl_interfaces::srv::dds_::ListParameters_Request_,
     rcl_interfaces::srv::dds_::ListParameters_Response_>
-  requester(req_params);
+  replier(rep_params);
 
-  rcl_interfaces::srv::dds_::ListParameters_Request_ request;
-  request.depth(0);
+  rcl_interfaces::srv::dds_::ListParameters_Response_ response;
+  response.result().names().resize(3);
+  response.result().names()[0] = "foo";
+  response.result().names()[1] = "bar";
+  response.result().names()[2] = "baz";
 
   rti::ros2::GraphProperties g_props;
   g_props.graph_participant = participant;
   rti::ros2::Graph graph(g_props);
 
-  auto node_handle = graph.register_local_node("dds_proxy");
+  auto node_handle = graph.register_local_node("params_service");
   assert(rti::ros2::GraphNodeHandle_INVALID != node_handle);
 
   graph.inspect_local_node(node_handle);
 
   while (true)
   {
-    std::cout << "Sending request..." << std::endl;
-    requester.send_request(request);
+    std::cout << "Waiting for requests..." << std::endl;
+    dds::sub::LoanedSamples<rcl_interfaces::srv::dds_::ListParameters_Request_>
+      requests = replier.receive_requests(dds::core::Duration::from_secs(10));
 
-    auto replies = requester.receive_replies(dds::core::Duration::from_secs(10));
-    if (replies.length() == 0) {
-        std::cout << "No reply received\n";
-    }
-    for (const auto& reply : replies) {
-      if (reply.info().valid()) {
-          std::cout << "Received reply: " << std::endl;
-          for (auto & name : reply.data().result().names())
-          {
-            std::cout << "  - " << name << std::endl;
-          }
-      } else {
-          std::cout << "Received invalid reply\n";
+    for (const auto& request : requests) {
+      if (!request.info().valid()) {
+        std::cout << "Received invalid request\n";
+        continue;
       }
-    }
 
-    std::this_thread::sleep_for(5s);
+      std::cout << "Received request!" << std::endl;
+      replier.send_reply(response, request.info());
+    }
   }
 
   return 0;
