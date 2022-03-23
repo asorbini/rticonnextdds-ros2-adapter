@@ -446,7 +446,7 @@ TEST_F(TestGraphUpdates, publish_updates) {
   auto ndata = data.node_entities_info_seq()[0];
 
   ASSERT_EQ(ndata.node_name(), std::string("foo"));
-  ASSERT_EQ(ndata.node_namespace(), std::string(""));
+  ASSERT_EQ(ndata.node_namespace(), std::string("/"));
 
   ASSERT_EQ(ndata.reader_gid_seq().size(), 3);
   ASSERT_EQ(ndata.writer_gid_seq().size(), 3);
