@@ -1,7 +1,7 @@
 # ROS 2 helper for Connext DDS applications
 
 `rticonnextdds-ros2-adapter` is an open-source C/C++ library to help
-applications built with Connext DDS to interact with the
+applications built with Connext DDS interact with the
 [ROS 2 graph](https://docs.ros.org/en/rolling/Tutorials/Understanding-ROS2-Nodes.html#the-ros-2-graph) and other components of the ROS 2 ecosystem.
 
 ## Building
