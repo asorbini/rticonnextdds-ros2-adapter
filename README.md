@@ -218,7 +218,7 @@ The C++ adapter API is built on top of the C implementation, and it exposes
 very similar interfaces in a more C++ friendly variant.
 
 Applications are expected to instantiate class `rti::ros2::Graph` with a
-DomainParticipant:
+`dds::domain::DomainParticipant`:
 
 ```cpp
 #include "dds/dds.hpp"
@@ -265,7 +265,7 @@ try {
 }
 ```
 
-The main difference with the C API is that in the C++ API, function which returned
+The main difference with the C API is that in the C++ API, functions which returned
 `DDS_ReturnCode_t` in C will instead throw an exception
 derived from `dds::core::Exception` in case of error.
 
