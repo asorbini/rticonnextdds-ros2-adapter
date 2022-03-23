@@ -139,7 +139,7 @@ functions to facilitate generation of conforming names.
 
 The `rticonnextdds-ros2-adapter` C API is meant to be integrated into applications using Connext's C API.
 
-Applications are expected to create an object of type `RTIROS2_Graph' and pass it a DomainParticipant to use through the properties object:
+Applications are expected to create an object of type `RTIROS2_Graph` and pass it a DomainParticipant to use through the properties object:
 
 ```c
 #include "ndds/ndds_c.h"
@@ -221,7 +221,7 @@ Applications are expected to instantiate class `rti::ros2::Graph` with a
 DomainParticipant:
 
 ```cpp
-#include <dds/dds.hpp>
+#include "dds/dds.hpp"
 #include "rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_cpp.hpp"
 
 dds::domain::DomainParticipant my_participant(0);
@@ -240,7 +240,18 @@ entities.
 using namespace rti::ros2;
 
 GraphNodeHandle node_h = graph.register_local_node("my_node");
-GraphEndpointHandle endp_h = graph.register_local_subscription(node_h, my_reader);
+if (GraphNodeHandle_INVALID == endp_h)
+{
+  std::cout << "failed to register node" << std::endl;
+}
+else
+{
+  GraphEndpointHandle endp_h = graph.register_local_subscription(node_h, my_reader);
+  if (GraphEndpointHandle_INVALID == endp_h)
+  {
+    std::cout << "failed to register subscription" << std::endl;
+  }
+}
 ```
 
 The C++ API can also automatically inspect a node's participant:
@@ -250,7 +261,7 @@ try {
   graph.inspect_local_node(node_h);
 } catch (dds::core::Exception & e)
 {
-  std::cout << "DDS exception: " << e.what();
+  std::cout << "DDS exception: " << e.what() << std::endl;
 }
 ```
 
