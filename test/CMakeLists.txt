@@ -6,6 +6,10 @@ if(NOT TARGET rticonnextdds_ros2_adapter_c)
   find_package(rticonnextdds_ros2_adapter_c CONFIG REQUIRED)
 endif()
 
+if(NOT TARGET rticonnextdds_ros2_adapter_cpp)
+  find_package(rticonnextdds_ros2_adapter_cpp CONFIG REQUIRED)
+endif()
+
 # GoogleTest requires at least C++11
 set(CMAKE_CXX_STANDARD 14)
 

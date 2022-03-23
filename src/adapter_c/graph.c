@@ -18,7 +18,7 @@
 const char * const RTIROS2_GRAPH_TOPIC_NAME = "ros_discovery_info";
 
 const char * const RTIROS2_GRAPH_TYPE_NAME =
-  "rmw_dds_common::msg::dds::ParticipantEntitiesInfo_";
+  "rmw_dds_common::msg::dds_::ParticipantEntitiesInfo_";
 
 DDS_ReturnCode_t
 RTIROS2_Graph_customize_datawriter_qos(
@@ -284,14 +284,12 @@ RTIROS2_Graph_register_local_node(
     goto done;
   }
 
-  if (NULL != node_namespace)
+  node->node_namespace = DDS_String_dup(
+    (NULL != node_namespace)?node_namespace:"/");
+  if (NULL == node->node_namespace)
   {
-    node->node_namespace = DDS_String_dup(node_namespace);
-    if (NULL == node->node_namespace)
-    {
-      /* TODO(asorbini) Log error */
-      goto done;
-    }
+    /* TODO(asorbini) Log error */
+    goto done;
   }
 
   RTIROS2_Graph_queue_update(self);

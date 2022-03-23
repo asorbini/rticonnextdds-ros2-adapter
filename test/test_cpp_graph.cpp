@@ -22,7 +22,6 @@
 #include "rticonnextdds_ros2_adapter_test/rticonnextdds_ros2_adapter_test_model.hpp"
 #include "rticonnextdds_ros2_adapter_test/rticonnextdds_ros2_adapter_test_modelPlugin.hpp"
 
-
 using namespace std::chrono_literals;
 using namespace rti::ros2;
 
@@ -439,7 +438,7 @@ TEST_F(TestGraphUpdates, publish_updates) {
     memcmp(
       &(data.gid().data()[0]),
       &(graph_participant_gid.data()[0]),
-      RTIROS2_GID_LENGTH);
+      RTIROS2::GID_LENGTH);
   ASSERT_EQ(cmp_res, 0);
 
   ASSERT_EQ(data.node_entities_info_seq().size(), 1);

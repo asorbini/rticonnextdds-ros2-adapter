@@ -970,31 +970,15 @@ RTIROS2_Graph_node_to_sample(
     /* TODO(asorbini) Log error */
     goto done;
   }
-  if (NULL != node->node_namespace)
+  if (NULL != sample->node_namespace)
   {
-    if (NULL != sample->node_namespace)
-    {
-      DDS_String_free(sample->node_namespace);
-    }
-    sample->node_namespace = DDS_String_dup(node->node_namespace);
-    if (NULL == sample->node_namespace)
-    {
-      /* TODO(asorbini) Log error */
-      goto done;
-    }
+    DDS_String_free(sample->node_namespace);
   }
-  else
+  sample->node_namespace = DDS_String_dup(node->node_namespace);
+  if (NULL == sample->node_namespace)
   {
-    if (sample->node_namespace[0] != '\0')
-    {
-      DDS_String_free(sample->node_namespace);
-      sample->node_namespace = DDS_String_dup("");
-      if (NULL == sample->node_namespace)
-      {
-        /* TODO(asorbini) Log error */
-        goto done;
-      }
-    }
+    /* TODO(asorbini) Log error */
+    goto done;
   }
 
   if (!RTIROS2_GidSeq_ensure_length(

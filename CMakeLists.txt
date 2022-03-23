@@ -223,3 +223,7 @@ export(EXPORT export_${PROJECT_NAME}_cpp
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples/hello_c_adapter)
+endif()
