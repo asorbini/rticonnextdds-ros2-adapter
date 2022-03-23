@@ -16,7 +16,11 @@
 #ifndef rti_ros2_graph_impl_h
 #define rti_ros2_graph_impl_h
 
-#include "rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_graph.h"
+#include "rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_c.h"
+
+#ifndef UNUSED_ARG
+#define UNUSED_ARG(arg_)        (void)(arg_)
+#endif /* UNUSED_ARG */
 
 extern const char * const RTIROS2_GRAPH_THREAD_NAME;
 
@@ -99,6 +103,7 @@ struct RTIROS2_GraphI
   struct RTIOsapiThread * thread_pinfo;
   DDS_Boolean thread_pinfo_active;
   struct DDS_Duration_t poll_period;
+  RTIROS2_GraphSampleAdapter sample_adapter;
 };
 
 #define RTIROS2_Graph_INITIALIZER \
@@ -122,6 +127,7 @@ struct RTIROS2_GraphI
   NULL /* thread_pinfo */,\
   DDS_BOOLEAN_FALSE /* thread_pinfo_active */,\
   {0, 0} /* poll_period */,\
+  RTIROS2_GraphSampleAdapter_INITIALIZER /* sample_adapter */\
 }
 
 DDS_ReturnCode_t
@@ -262,9 +268,21 @@ RTIROS2_Graph_node_to_sample(
   RTIROS2_NodeEntitiesInfo * const sample);
 
 DDS_ReturnCode_t
-RTIROS2_Graph_to_sample(
+RTIROS2_CGraphSampleAdapter_publish_sample(
   RTIROS2_Graph * const self,
-  RTIROS2_ParticipantEntitiesInfo * const sample);
+  void * const sample,
+  void * const adapter_data);
+
+void*
+RTIROS2_CGraphSampleAdapter_alloc_sample(
+  RTIROS2_Graph * const self,
+  void * const adapter_data);
+
+void
+RTIROS2_CGraphSampleAdapter_free_sample(
+  RTIROS2_Graph * const self,
+  void * const sample,
+  void * const adapter_data);
 
 DDS_ReturnCode_t
 RTIROS2_Graph_publish_update(RTIROS2_Graph * const self);
@@ -280,5 +298,42 @@ DDS_ReturnCode_t
 RTIROS2_Graph_inspect_local_nodeEA(
   RTIROS2_Graph * const self,
   RTIROS2_GraphNode * const node);
+
+
+DDS_ReturnCode_t
+RTIROS2_Graph_convert_to_sample(
+  RTIROS2_Graph * const self,
+  void * const sample);
+
+#define RTIROS2_Graph_convert_to_sample(s_, ss_) \
+  ((s_)->sample_adapter.convert_to_sample((s_), (ss_),\
+    (s_)->sample_adapter.adapter_data))
+
+DDS_ReturnCode_t
+RTIROS2_Graph_publish_sample(
+  RTIROS2_Graph * const self,
+  void * const sample);
+
+#define RTIROS2_Graph_publish_sample(s_, ss_) \
+  ((s_)->sample_adapter.publish_sample((s_), (ss_),\
+    (s_)->sample_adapter.adapter_data))
+
+void*
+RTIROS2_Graph_alloc_sample(
+  RTIROS2_Graph * const self);
+
+#define RTIROS2_Graph_alloc_sample(s_) \
+  ((s_)->sample_adapter.alloc_sample((s_),\
+    (s_)->sample_adapter.adapter_data))
+
+void
+RTIROS2_Graph_free_sample(
+  RTIROS2_Graph * const self,
+  void * const sample);
+
+#define RTIROS2_Graph_free_sample(s_, ss_) \
+  ((s_)->sample_adapter.free_sample((s_), (ss_),\
+    (s_)->sample_adapter.adapter_data))
+
 
 #endif  /* rti_ros2_graph_impl_h */

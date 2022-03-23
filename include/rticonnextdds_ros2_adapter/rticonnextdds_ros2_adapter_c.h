@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef RTICONNEXTDDS_ROS2_ADAPTER__GRAPH_H
-#define RTICONNEXTDDS_ROS2_ADAPTER__GRAPH_H
+#ifndef RTICONNEXTDDS_ROS2_ADAPTER__C_H
+#define RTICONNEXTDDS_ROS2_ADAPTER__C_H
 
 #include "ndds/ndds_c.h"
 #include "rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_dll.h"
@@ -50,6 +50,49 @@ typedef enum RTIROS2_GraphEndpointType
   RTIROS2_GRAPH_ENDPOINT_SERVICE = 4
 } RTIROS2_GraphEndpointType_t;
 
+typedef DDS_ReturnCode_t (*RTIROS2_GraphSampleAdapter_ConvertToSampleFn)(
+  RTIROS2_Graph * const graph,
+  void * const sample,
+  void * const adapter_data);
+
+typedef DDS_ReturnCode_t (*RTIROS2_GraphSampleAdapter_PublishSampleFn)(
+  RTIROS2_Graph * const graph,
+  void * const sample,
+  void * const adapter_data);
+
+typedef void * (*RTIROS2_GraphSampleAdapter_AllocSampleFn)(
+  RTIROS2_Graph * const graph,
+  void * const adapter_data);
+
+typedef void (*RTIROS2_GraphSampleAdapter_FreeSampleFn)(
+  RTIROS2_Graph * const graph,
+  void * const sample,
+  void * const adapter_data);
+
+typedef struct RTIROS2_GraphSampleAdapterI
+{
+  RTIROS2_GraphSampleAdapter_ConvertToSampleFn convert_to_sample;
+  RTIROS2_GraphSampleAdapter_PublishSampleFn publish_sample;
+  RTIROS2_GraphSampleAdapter_AllocSampleFn alloc_sample;
+  RTIROS2_GraphSampleAdapter_FreeSampleFn free_sample;
+  void * adapter_data;
+} RTIROS2_GraphSampleAdapter;
+
+#define RTIROS2_GraphSampleAdapter_INITIALIZER \
+{\
+  NULL /* convert_to_sample */,\
+  NULL /* publish_sample */,\
+  NULL /* alloc_sample */,\
+  NULL /* free_sample */,\
+  NULL /* adapter_data */\
+}
+
+#define RTIROS2_GraphSampleAdapter_is_valid(s_) \
+  ((NULL != (s_)->convert_to_sample) && \
+    (NULL != (s_)->publish_sample) && \
+    (NULL != (s_)->alloc_sample) &&\
+    (NULL != (s_)->free_sample))
+
 struct RTIROS2_GraphProperties
 {
   DDS_DomainParticipant * graph_participant;
@@ -57,6 +100,7 @@ struct RTIROS2_GraphProperties
   DDS_Topic * graph_topic;
   DDS_DataWriter * graph_writer;
   struct DDS_Duration_t poll_period;
+  RTIROS2_GraphSampleAdapter sample_adapter;
 };
 
 #define RTIROS2_GraphProperties_INITIALIZER \
@@ -65,7 +109,8 @@ struct RTIROS2_GraphProperties
   NULL /* graph_publisher */,\
   NULL /* graph_topic */,\
   NULL /* graph_writer */,\
-  {0, 0} /* poll_period */\
+  {0, 0} /* poll_period */,\
+  RTIROS2_GraphSampleAdapter_INITIALIZER /* sample_adapter */\
 }
 
 RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
@@ -261,8 +306,15 @@ DDS_ReturnCode_t
 RTIROS2_Graph_compute_writer_gid(
   DDS_DataWriter * const dds_writer, RTIROS2_Gid * const gid);
 
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+DDS_ReturnCode_t
+RTIROS2_CGraphSampleAdapter_convert_to_sample(
+  RTIROS2_Graph * const self,
+  void * const sample,
+  void * const adapter_data);
+
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif  /* __cplusplus */
 
-#endif  /* RTICONNEXTDDS_ROS2_ADAPTER__GRAPH_H */
+#endif  /* RTICONNEXTDDS_ROS2_ADAPTER__C_H */

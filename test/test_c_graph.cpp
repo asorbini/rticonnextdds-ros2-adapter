@@ -17,9 +17,20 @@
 
 #include <gtest/gtest.h>
 
-#include "rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_graph.h"
+#include "rticonnextdds_ros2_adapter/rticonnextdds_ros2_adapter_c.h"
 
-#include "test_model.h"
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
+/* The generated type support does NOT and "extern C" declaration so we
+   must wrap the includes for correct linkage */
+
+#include "rticonnextdds_ros2_adapter_test/rticonnextdds_ros2_adapter_test_modelSupport.h"
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif  /* __cplusplus */
 
 using namespace std::chrono_literals;
 

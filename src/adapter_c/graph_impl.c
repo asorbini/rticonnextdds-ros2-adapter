@@ -41,6 +41,22 @@ RTIROS2_Graph_initialize(
 
   *self = def_self;
 
+  if (!RTIROS2_GraphSampleAdapter_is_valid(&properties->sample_adapter))
+  {
+    self->sample_adapter.convert_to_sample =
+      RTIROS2_CGraphSampleAdapter_convert_to_sample;
+    self->sample_adapter.publish_sample =
+      RTIROS2_CGraphSampleAdapter_publish_sample;
+    self->sample_adapter.alloc_sample =
+      RTIROS2_CGraphSampleAdapter_alloc_sample;
+    self->sample_adapter.free_sample =
+      RTIROS2_CGraphSampleAdapter_free_sample;
+  }
+  else
+  {
+    self->sample_adapter = properties->sample_adapter;
+  }
+
   self->nodes_pool =
     REDAFastBufferPool_newForStructure(RTIROS2_GraphNode, &pool_props);
   if (self->nodes_pool == NULL)
@@ -144,7 +160,7 @@ RTIROS2_Graph_initialize(
     self->graph_writer_own = DDS_BOOLEAN_TRUE;
   }
 
-  self->pinfo = RTIROS2_ParticipantEntitiesInfoTypeSupport_create_data();
+  self->pinfo = RTIROS2_Graph_alloc_sample(self);
   if (NULL == self->pinfo)
   {
     /* TODO(asorbini) Log error */
@@ -205,9 +221,16 @@ DDS_ReturnCode_t
 RTIROS2_Graph_finalize(RTIROS2_Graph * const self)
 {
   DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
-  RTIROS2_GraphNode *node =
-    (RTIROS2_GraphNode*) REDAInlineList_getFirst(&self->nodes);
+  RTIROS2_GraphNode * node = NULL;
 
+  if (NULL != self->thread_pinfo)
+  {
+    self->thread_pinfo_active = DDS_BOOLEAN_FALSE;
+    RTIOsapiSemaphore_give(self->sem_pinfo);
+    RTIOsapiSemaphore_take(self->sem_pinfo_exit, RTI_NTP_TIME_INFINITE);
+    RTIOsapiThread_delete(self->thread_pinfo);
+  }
+  node = (RTIROS2_GraphNode*) REDAInlineList_getFirst(&self->nodes);
   while (NULL != node)
   {
     RTIROS2_GraphNode * const next_node =
@@ -219,14 +242,6 @@ RTIROS2_Graph_finalize(RTIROS2_Graph * const self)
       goto done;
     }
     node = next_node;
-  }
-
-  if (NULL != self->thread_pinfo)
-  {
-    self->thread_pinfo_active = DDS_BOOLEAN_FALSE;
-    RTIOsapiSemaphore_give(self->sem_pinfo);
-    RTIOsapiSemaphore_take(self->sem_pinfo_exit, RTI_NTP_TIME_INFINITE);
-    RTIOsapiThread_delete(self->thread_pinfo);
   }
 
   if (NULL != self->mutex_self)
@@ -246,7 +261,7 @@ RTIROS2_Graph_finalize(RTIROS2_Graph * const self)
 
   if (NULL != self->pinfo)
   {
-    RTIROS2_ParticipantEntitiesInfoTypeSupport_delete_data(self->pinfo);
+    RTIROS2_Graph_free_sample(self, self->pinfo);
   }
 
   if (NULL != self->graph_writer && self->graph_writer_own)
@@ -502,6 +517,8 @@ RTIROS2_Graph_lookup_local_endpoint_by_handle(
   RTIROS2_GraphEndpoint * endp =
     (RTIROS2_GraphEndpoint *) REDAInlineList_getFirst(&node->endpoints);
 
+  UNUSED_ARG(self);
+
   while (NULL != endp)
   {
     if (endp->handle == endp_handle)
@@ -524,6 +541,9 @@ RTIROS2_Graph_lookup_local_endpoint_by_dds_endpoints(
 {
   RTIROS2_GraphEndpoint * endp =
     (RTIROS2_GraphEndpoint *) REDAInlineList_getFirst(&node->endpoints);
+
+  UNUSED_ARG(self);
+
   while (NULL != endp)
   {
     if ((NULL == dds_reader || endp->dds_reader == dds_reader) &&
@@ -548,6 +568,7 @@ RTIROS2_Graph_lookup_local_endpoint_by_topic_name(
   RTIROS2_GraphEndpoint * endp =
     (RTIROS2_GraphEndpoint *) REDAInlineList_getFirst(&node->endpoints);
   const char * endp_topic_name = NULL;
+  UNUSED_ARG(self);
   while (NULL != endp)
   {
     if (writer)
@@ -937,10 +958,11 @@ RTIROS2_Graph_node_to_sample(
   struct RTIROS2_GidSeq * gid_seq = NULL;
   RTIROS2_Gid * gid = NULL;
 
+  UNUSED_ARG(self);
+
   if (NULL != sample->node_name)
   {
     DDS_String_free(sample->node_name);
-    sample->node_name = NULL;
   }
   sample->node_name = DDS_String_dup(node->node_name);
   if (NULL == sample->node_name)
@@ -948,18 +970,30 @@ RTIROS2_Graph_node_to_sample(
     /* TODO(asorbini) Log error */
     goto done;
   }
-  if (NULL != sample->node_namespace)
-  {
-    DDS_String_free(sample->node_namespace);
-    sample->node_namespace = NULL;
-  }
   if (NULL != node->node_namespace)
   {
+    if (NULL != sample->node_namespace)
+    {
+      DDS_String_free(sample->node_namespace);
+    }
     sample->node_namespace = DDS_String_dup(node->node_namespace);
     if (NULL == sample->node_namespace)
     {
       /* TODO(asorbini) Log error */
       goto done;
+    }
+  }
+  else
+  {
+    if (sample->node_namespace[0] != '\0')
+    {
+      DDS_String_free(sample->node_namespace);
+      sample->node_namespace = DDS_String_dup("");
+      if (NULL == sample->node_namespace)
+      {
+        /* TODO(asorbini) Log error */
+        goto done;
+      }
     }
   }
 
@@ -1005,15 +1039,20 @@ done:
 }
 
 DDS_ReturnCode_t
-RTIROS2_Graph_to_sample(
+RTIROS2_CGraphSampleAdapter_convert_to_sample(
   RTIROS2_Graph * const self,
-  RTIROS2_ParticipantEntitiesInfo * const sample)
+  void * const vsample,
+  void * const adapter_data)
 {
   DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
   DDS_InstanceHandle_t ih = DDS_HANDLE_NIL;
   RTIROS2_GraphNode * node = NULL;
   RTIROS2_NodeEntitiesInfo * nsample = NULL;
   DDS_Long node_i = 0;
+  RTIROS2_ParticipantEntitiesInfo * sample =
+    (RTIROS2_ParticipantEntitiesInfo*)vsample;
+
+  UNUSED_ARG(adapter_data);
 
   ih = DDS_Entity_get_instance_handle(
     DDS_DomainParticipant_as_entity(self->graph_participant));
@@ -1049,12 +1088,10 @@ DDS_ReturnCode_t
 RTIROS2_Graph_publish_update(RTIROS2_Graph * const self)
 {
   DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
-  RTIROS2_ParticipantEntitiesInfoDataWriter * writer =
-    RTIROS2_ParticipantEntitiesInfoDataWriter_narrow(self->graph_writer);
 
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
 
-  if (DDS_RETCODE_OK != RTIROS2_Graph_to_sample(self, self->pinfo))
+  if (DDS_RETCODE_OK != RTIROS2_Graph_convert_to_sample(self, self->pinfo))
   {
     /* TODO(asorbini) Log error */
     RTIOsapiSemaphore_give(self->mutex_self);
@@ -1063,9 +1100,7 @@ RTIROS2_Graph_publish_update(RTIROS2_Graph * const self)
 
   RTIOsapiSemaphore_give(self->mutex_self);
 
-  if (DDS_RETCODE_OK !=
-    RTIROS2_ParticipantEntitiesInfoDataWriter_write(
-      writer, self->pinfo, &DDS_HANDLE_NIL))
+  if (DDS_RETCODE_OK != RTIROS2_Graph_publish_sample(self, self->pinfo))
   {
     /* TODO(asorbini) Log error */
     goto done;
@@ -1074,6 +1109,51 @@ RTIROS2_Graph_publish_update(RTIROS2_Graph * const self)
   
 done:
   return retcode;
+}
+
+DDS_ReturnCode_t
+RTIROS2_CGraphSampleAdapter_publish_sample(
+  RTIROS2_Graph * const self,
+  void * const sample,
+  void * const adapter_data)
+{
+  RTIROS2_ParticipantEntitiesInfoDataWriter * writer =
+    RTIROS2_ParticipantEntitiesInfoDataWriter_narrow(self->graph_writer);
+  RTIROS2_ParticipantEntitiesInfo * const pinfo =
+    (RTIROS2_ParticipantEntitiesInfo*)sample;
+
+  UNUSED_ARG(adapter_data);
+
+  if (DDS_RETCODE_OK !=
+    RTIROS2_ParticipantEntitiesInfoDataWriter_write(
+      writer, pinfo, &DDS_HANDLE_NIL))
+  {
+    /* TODO(asorbini) Log error */
+    return DDS_RETCODE_ERROR;
+  }
+
+  return DDS_RETCODE_OK;
+}
+
+void*
+RTIROS2_CGraphSampleAdapter_alloc_sample(
+  RTIROS2_Graph * const self,
+  void * const adapter_data)
+{
+  UNUSED_ARG(self);
+  UNUSED_ARG(adapter_data);
+  return RTIROS2_ParticipantEntitiesInfoTypeSupport_create_data();
+}
+
+void
+RTIROS2_CGraphSampleAdapter_free_sample(
+  RTIROS2_Graph * const self,
+  void * const sample,
+  void * const adapter_data)
+{
+  UNUSED_ARG(self);
+  UNUSED_ARG(adapter_data);
+  RTIROS2_ParticipantEntitiesInfoTypeSupport_delete_data(sample);
 }
 
 void*
@@ -1135,6 +1215,8 @@ RTIROS2_Graph_update_thread(void * param)
   }
 
   RTIOsapiSemaphore_give(self->sem_pinfo_exit);
+
+  return NULL;
 }
 
 void

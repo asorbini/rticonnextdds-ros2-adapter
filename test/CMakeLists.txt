@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(rticonnextdds_ros2_adapter_test CXX)
+project(rticonnextdds_ros2_adapter_test C CXX)
 
-if(NOT TARGET rticonnextdds_ros2_adapter)
-  find_package(rticonnextdds_ros2_adapter CONFIG REQUIRED)
+if(NOT TARGET rticonnextdds_ros2_adapter_c)
+  find_package(rticonnextdds_ros2_adapter_c CONFIG REQUIRED)
 endif()
 
 # GoogleTest requires at least C++11
@@ -59,21 +59,31 @@ endif()
 
 set(generated_code_dir  ${CMAKE_CURRENT_BINARY_DIR}/rtiddsgen)
 
-set(generated_code_headers
+set(generated_code_c_headers
   ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_model.h
   ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_modelSupport.h
   ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_modelPlugin.h)
 
-set(generated_code_sources
+set(generated_code_c_sources
   ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_model.c
   ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_modelSupport.c
   ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_modelPlugin.c)
 
-set(generated_code ${generated_code_headers} ${generated_code_sources})
+set(generated_code_c ${generated_code_c_headers} ${generated_code_c_sources})
+
+set(generated_code_cpp_headers
+  ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_model.hpp
+  ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_modelPlugin.hpp)
+
+set(generated_code_cpp_sources
+  ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_model.cxx
+  ${generated_code_dir}/${PROJECT_NAME}/${PROJECT_NAME}_modelPlugin.cxx)
+
+set(generated_code_cpp ${generated_code_cpp_headers} ${generated_code_cpp_sources})
 
 set(graph_test_idl ${CMAKE_CURRENT_SOURCE_DIR}/../idl/rticonnextdds_ros2_adapter/${PROJECT_NAME}_model.idl)
 
-add_custom_command(OUTPUT ${generated_code}
+add_custom_command(OUTPUT ${generated_code_c}
   COMMAND ${CMAKE_COMMAND} -E make_directory ${generated_code_dir}/${PROJECT_NAME}
   COMMAND ${rtiddsgen_bin} -language C
                            -replace
@@ -82,16 +92,32 @@ add_custom_command(OUTPUT ${generated_code}
                            ${graph_test_idl}
   DEPENDS ${graph_test_idl})
 
-add_library(${PROJECT_NAME}_model SHARED
-  ${generated_code}
+add_custom_command(OUTPUT ${generated_code_cpp}
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${generated_code_dir}/${PROJECT_NAME}
+  COMMAND ${rtiddsgen_bin} -language C++11
+                           -replace
+                           -d ${generated_code_dir}/${PROJECT_NAME}
+                           -unboundedSupport
+                           ${graph_test_idl}
+  DEPENDS ${graph_test_idl})
+
+add_library(${PROJECT_NAME}_c_model SHARED
+  ${generated_code_c}
 )
-target_link_libraries(${PROJECT_NAME}_model RTIConnextDDS::c_api)
-
-target_compile_definitions(${PROJECT_NAME}_model PRIVATE NDDS_USER_DLL_EXPORT)
-
-target_include_directories(${PROJECT_NAME}_model PUBLIC
+target_link_libraries(${PROJECT_NAME}_c_model RTIConnextDDS::c_api)
+target_compile_definitions(${PROJECT_NAME}_c_model PRIVATE NDDS_USER_DLL_EXPORT)
+target_include_directories(${PROJECT_NAME}_c_model PUBLIC
   "$<BUILD_INTERFACE:${generated_code_dir}>"
   "$<INSTALL_INTERFACE:include>")
+
+add_library(${PROJECT_NAME}_cpp_model SHARED
+  ${generated_code_cpp}
+)
+target_link_libraries(${PROJECT_NAME}_cpp_model RTIConnextDDS::cpp2_api)
+target_compile_definitions(${PROJECT_NAME}_cpp_model PRIVATE NDDS_USER_DLL_EXPORT)
+target_include_directories(${PROJECT_NAME}_cpp_model PUBLIC
+"$<BUILD_INTERFACE:${generated_code_dir}>"
+"$<INSTALL_INTERFACE:include>")
 
 function(define_tester tester)
   cmake_parse_arguments(_test
@@ -105,7 +131,6 @@ function(define_tester tester)
   )
   target_link_libraries(${tester}
     gtest_main
-    rticonnextdds_ros2_adapter
     ${_test_LIBRARIES}
   )
   target_include_directories(${tester} PRIVATE
@@ -113,9 +138,18 @@ function(define_tester tester)
   gtest_discover_tests(${tester})
 endfunction()
 
-define_tester(test_graph
+define_tester(test_c_graph
   SOURCES
-    test_graph.cpp
+    test_c_graph.cpp
   LIBRARIES
-    ${PROJECT_NAME}_model
+  rticonnextdds_ros2_adapter_c
+    ${PROJECT_NAME}_c_model
+)
+
+define_tester(test_cpp_graph
+  SOURCES
+    test_cpp_graph.cpp
+  LIBRARIES
+  rticonnextdds_ros2_adapter_cpp
+  ${PROJECT_NAME}_cpp_model
 )

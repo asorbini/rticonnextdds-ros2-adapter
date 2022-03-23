@@ -215,7 +215,6 @@ RTIROS2_Graph_register_local_node(
   RTIROS2_GraphNodeHandle result = RTIROS2_GraphNodeHandle_INVALID;
   RTIROS2_GraphNode * node = NULL;
   static const RTIROS2_GraphNode def_node = RTIROS2_GraphNode_INITIALIZER;
-  DDS_DomainParticipant * node_participant = NULL;
   DDS_Boolean enable_poll = DDS_BOOLEAN_FALSE;
 
   if (NULL == self)
@@ -433,7 +432,6 @@ RTIROS2_Graph_unregister_local_node(
 {
   DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
   RTIROS2_GraphNode * node = NULL;
-  RTIROS2_GraphEndpoint * endp = NULL;
 
   if (NULL == self)
   {
