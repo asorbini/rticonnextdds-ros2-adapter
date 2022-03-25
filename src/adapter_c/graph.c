@@ -1105,3 +1105,73 @@ RTIROS2_Graph_compute_reader_topic_names(
 done:
   return retcode;
 }
+
+DDS_ReturnCode_t
+RTIROS2_Graph_compute_service_topic_names(
+  const char * const ros2_node_name,
+  const char * const ros2_service_name,
+  const char * const ros2_type_name,
+  char * const dds_req_topic_name,
+  size_t * const dds_req_topic_name_len,
+  char * const dds_req_type_name,
+  size_t * const dds_req_type_name_len,
+  char * const dds_rep_topic_name,
+  size_t * const dds_rep_topic_name_len,
+  char * const dds_rep_type_name,
+  size_t * const dds_rep_type_name_len)
+{
+  DDS_ReturnCode_t retcode = DDS_RETCODE_ERROR;
+  char * ros2_topic_name = NULL;
+  size_t ros2_topic_name_len = 0;
+  size_t ros2_node_name_len = 0;
+  size_t ros2_svc_name_len = 0;
+
+  ros2_node_name_len = strlen(ros2_node_name);
+  ros2_svc_name_len = strlen(ros2_service_name);
+  ros2_topic_name_len = ros2_node_name_len + 1 + ros2_svc_name_len;
+
+  ros2_topic_name = DDS_String_alloc(ros2_topic_name_len);
+  if (NULL == ros2_topic_name)
+  {
+    goto done;
+  }
+
+  memcpy(ros2_topic_name, ros2_node_name, ros2_node_name_len);
+  memcpy(ros2_topic_name + ros2_node_name_len, "/", 1);
+  memcpy(ros2_topic_name + ros2_node_name_len + 1,
+    ros2_service_name, ros2_svc_name_len + 1);
+
+  if (DDS_RETCODE_OK !=
+    RTIROS2_Graph_compute_reader_topic_names(
+      ros2_topic_name,
+      ros2_type_name,
+      RTIROS2_GRAPH_ENDPOINT_SERVICE,
+      dds_req_topic_name,
+      dds_req_topic_name_len,
+      dds_req_type_name,
+      dds_req_type_name_len))
+  {
+    goto done;
+  }
+
+  if (DDS_RETCODE_OK !=
+    RTIROS2_Graph_compute_writer_topic_names(
+      ros2_topic_name,
+      ros2_type_name,
+      RTIROS2_GRAPH_ENDPOINT_SERVICE,
+      dds_rep_topic_name,
+      dds_rep_topic_name_len,
+      dds_rep_type_name,
+      dds_rep_type_name_len))
+  {
+    goto done;
+  }
+
+  retcode = DDS_RETCODE_OK;
+done:
+  if (NULL != ros2_topic_name)
+  {
+    DDS_String_free(ros2_topic_name);
+  }
+  return retcode;
+}

@@ -394,6 +394,100 @@ compute_reader_topic_names(
   DDS_String_free(type_name_buf);
 }
 
+void
+compute_service_topic_names(
+  const std::string & ros2_node_name,
+  const std::string & ros2_service_name,
+  const std::string & ros2_type_name,
+  std::string & dds_req_topic_name,
+  std::string & dds_req_type_name,
+  std::string & dds_rep_topic_name,
+  std::string & dds_rep_type_name)
+{
+  size_t dds_req_topic_name_len = 0;
+  size_t dds_req_type_name_len = 0;
+  size_t dds_rep_topic_name_len = 0;
+  size_t dds_rep_type_name_len = 0;
+
+  if (DDS_RETCODE_OK !=
+    RTIROS2_Graph_compute_service_topic_names(
+      ros2_node_name.c_str(),
+      ros2_service_name.c_str(),
+      ros2_type_name.c_str(),
+      nullptr,
+      &dds_req_topic_name_len,
+      nullptr,
+      &dds_req_type_name_len,
+      nullptr,
+      &dds_rep_topic_name_len,
+      nullptr,
+      &dds_rep_type_name_len))
+  {
+    throw dds::core::Error("failed to query size of service topic names");
+  }
+
+  char * req_topic_name_buf = DDS_String_alloc(dds_req_topic_name_len - 1);
+  if (nullptr == req_topic_name_buf)
+  {
+    throw dds::core::Error("failed to allocate request topic name string");
+  }
+
+  char * req_type_name_buf = DDS_String_alloc(dds_req_type_name_len - 1);
+  if (nullptr == req_type_name_buf)
+  {
+    DDS_String_free(req_topic_name_buf);
+    throw dds::core::Error("failed to allocate request type name string");
+  }
+
+  char * rep_topic_name_buf = DDS_String_alloc(dds_rep_topic_name_len - 1);
+  if (nullptr == rep_topic_name_buf)
+  {
+    DDS_String_free(req_topic_name_buf);
+    DDS_String_free(req_type_name_buf);
+    throw dds::core::Error("failed to allocate reply topic name string");
+  }
+
+  char * rep_type_name_buf = DDS_String_alloc(dds_rep_type_name_len - 1);
+  if (nullptr == rep_type_name_buf)
+  {
+    DDS_String_free(req_topic_name_buf);
+    DDS_String_free(req_type_name_buf);
+    DDS_String_free(rep_topic_name_buf);
+    throw dds::core::Error("failed to allocate reply type name string");
+  }
+
+  if (DDS_RETCODE_OK !=
+    RTIROS2_Graph_compute_service_topic_names(
+      ros2_node_name.c_str(),
+      ros2_service_name.c_str(),
+      ros2_type_name.c_str(),
+      req_topic_name_buf,
+      &dds_req_topic_name_len,
+      req_type_name_buf,
+      &dds_req_type_name_len,
+      rep_topic_name_buf,
+      &dds_rep_topic_name_len,
+      req_type_name_buf,
+      &dds_rep_type_name_len))
+  {
+    DDS_String_free(req_topic_name_buf);
+    DDS_String_free(req_type_name_buf);
+    DDS_String_free(rep_topic_name_buf);
+    DDS_String_free(rep_type_name_buf);
+    throw dds::core::Error("failed to generate reader topic names");
+  }
+
+  dds_req_topic_name = req_topic_name_buf;
+  dds_req_type_name = req_type_name_buf;
+  dds_rep_topic_name = rep_topic_name_buf;
+  dds_rep_type_name = rep_type_name_buf;
+
+  DDS_String_free(req_topic_name_buf);
+  DDS_String_free(req_type_name_buf);
+  DDS_String_free(rep_topic_name_buf);
+  DDS_String_free(rep_type_name_buf);
+}
+
 }  // namespace graph
 
 const GraphNodeHandle GraphNodeHandle_INVALID = RTIROS2_GraphNodeHandle_INVALID;

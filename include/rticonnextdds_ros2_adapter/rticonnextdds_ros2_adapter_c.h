@@ -353,6 +353,21 @@ RTIROS2_Graph_compute_reader_topic_names(
 
 RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
 DDS_ReturnCode_t
+RTIROS2_Graph_compute_service_topic_names(
+  const char * const ros2_node_name,
+  const char * const ros2_service_name,
+  const char * const ros2_type_name,
+  char * const dds_req_topic_name,
+  size_t * const dds_req_topic_name_len,
+  char * const dds_req_type_name,
+  size_t * const dds_req_type_name_len,
+  char * const dds_rep_topic_name,
+  size_t * const dds_rep_topic_name_len,
+  char * const dds_rep_type_name,
+  size_t * const dds_rep_type_name_len);
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+DDS_ReturnCode_t
 RTIROS2_CGraphSampleAdapter_convert_to_sample(
   RTIROS2_Graph * const self,
   DDS_DomainParticipant * const dds_participant,

@@ -106,6 +106,17 @@ namespace graph {
     const GraphEndpointType ros2_endp_type,
     std::string & dds_topic_name,
     std::string & dds_type_name);
+
+  RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+  void
+  compute_service_topic_names(
+    const std::string & ros2_node_name,
+    const std::string & ros2_service_name,
+    const std::string & ros2_type_name,
+    std::string & dds_req_topic_name,
+    std::string & dds_req_type_name,
+    std::string & dds_rep_topic_name,
+    std::string & dds_rep_type_name);
 }  // namespace graph
 
 class Graph {
