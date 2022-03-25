@@ -55,6 +55,8 @@ GraphEndpointType_from_c(const RTIROS2_GraphEndpointType_t c_type)
   }
 }
 
+#if 0
+// Not used for anything at the moment
 static
 RTIROS2_GraphEndpointType_t
 GraphEndpointType_to_c(const GraphEndpointType cpp_type)
@@ -83,6 +85,7 @@ GraphEndpointType_to_c(const GraphEndpointType cpp_type)
   }
   }
 }
+#endif
 
 static
 DDS_ReturnCode_t
@@ -275,22 +278,19 @@ compute_writer_gid(
 }
 
 void
-compute_writer_topic_names(
+compute_publisher_topic_names(
   const std::string & ros2_topic_name,
   const std::string & ros2_type_name,
-  const GraphEndpointType ros2_endp_type,
   std::string & dds_topic_name,
   std::string & dds_type_name)
 {
   size_t dds_topic_name_len = 0;
   size_t dds_type_name_len = 0;
-  auto c_endp_type = GraphEndpointType_to_c(ros2_endp_type);
 
   if (DDS_RETCODE_OK !=
-    RTIROS2_Graph_compute_writer_topic_names(
+    RTIROS2_Graph_compute_publisher_topic_names(
       ros2_topic_name.c_str(),
       ros2_type_name.c_str(),
-      c_endp_type,
       nullptr,
       &dds_topic_name_len,
       nullptr,
@@ -313,10 +313,9 @@ compute_writer_topic_names(
   }
 
   if (DDS_RETCODE_OK !=
-    RTIROS2_Graph_compute_writer_topic_names(
+    RTIROS2_Graph_compute_publisher_topic_names(
       ros2_topic_name.c_str(),
       ros2_type_name.c_str(),
-      c_endp_type,
       topic_name_buf,
       &dds_topic_name_len,
       type_name_buf,
@@ -335,22 +334,19 @@ compute_writer_topic_names(
 }
 
 void
-compute_reader_topic_names(
+compute_subscription_topic_names(
   const std::string & ros2_topic_name,
   const std::string & ros2_type_name,
-  const GraphEndpointType ros2_endp_type,
   std::string & dds_topic_name,
   std::string & dds_type_name)
 {
   size_t dds_topic_name_len = 0;
   size_t dds_type_name_len = 0;
-  auto c_endp_type = GraphEndpointType_to_c(ros2_endp_type);
 
   if (DDS_RETCODE_OK !=
-    RTIROS2_Graph_compute_reader_topic_names(
+    RTIROS2_Graph_compute_subscription_topic_names(
       ros2_topic_name.c_str(),
       ros2_type_name.c_str(),
-      c_endp_type,
       nullptr,
       &dds_topic_name_len,
       nullptr,
@@ -373,10 +369,9 @@ compute_reader_topic_names(
   }
 
   if (DDS_RETCODE_OK !=
-    RTIROS2_Graph_compute_reader_topic_names(
+    RTIROS2_Graph_compute_subscription_topic_names(
       ros2_topic_name.c_str(),
       ros2_type_name.c_str(),
-      c_endp_type,
       topic_name_buf,
       &dds_topic_name_len,
       type_name_buf,

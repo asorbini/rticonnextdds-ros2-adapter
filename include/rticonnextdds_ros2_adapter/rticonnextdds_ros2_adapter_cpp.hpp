@@ -88,22 +88,20 @@ namespace graph {
   compute_writer_gid(
     dds::pub::AnyDataWriter & dds_writer,
     RTIROS2::Gid & gid);
-  
+
   RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
   void
-  compute_writer_topic_names(
+  compute_publisher_topic_names(
     const std::string & ros2_topic_name,
     const std::string & ros2_type_name,
-    const GraphEndpointType ros2_endp_type,
     std::string & dds_topic_name,
     std::string & dds_type_name);
 
   RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
   void
-  compute_reader_topic_names(
+  compute_subscription_topic_names(
     const std::string & ros2_topic_name,
     const std::string & ros2_type_name,
-    const GraphEndpointType ros2_endp_type,
     std::string & dds_topic_name,
     std::string & dds_type_name);
 

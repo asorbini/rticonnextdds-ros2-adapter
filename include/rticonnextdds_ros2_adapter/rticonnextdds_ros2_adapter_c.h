@@ -331,10 +331,9 @@ RTIROS2_Graph_compute_writer_gid(
 
 RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
 DDS_ReturnCode_t
-RTIROS2_Graph_compute_writer_topic_names(
+RTIROS2_Graph_compute_publisher_topic_names(
   const char * const ros2_topic_name,
   const char * const ros2_type_name,
-  const RTIROS2_GraphEndpointType_t ros2_endp_type,
   char * const dds_topic_name,
   size_t * const dds_topic_name_len,
   char * const dds_type_name,
@@ -342,10 +341,9 @@ RTIROS2_Graph_compute_writer_topic_names(
 
 RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
 DDS_ReturnCode_t
-RTIROS2_Graph_compute_reader_topic_names(
+RTIROS2_Graph_compute_subscription_topic_names(
   const char * const ros2_topic_name,
   const char * const ros2_type_name,
-  const RTIROS2_GraphEndpointType_t ros2_endp_type,
   char * const dds_topic_name,
   size_t * const dds_topic_name_len,
   char * const dds_type_name,

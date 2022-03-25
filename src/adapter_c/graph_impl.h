@@ -317,4 +317,26 @@ RTIROS2_Graph_gather_domain_participants(
   RTIROS2_Graph * const self,
   struct DDS_DomainParticipantSeq * const participants);
 
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+DDS_ReturnCode_t
+RTIROS2_Graph_compute_dds_writer_topic_names(
+  const char * const ros2_topic_name,
+  const char * const ros2_type_name,
+  const RTIROS2_GraphEndpointType_t ros2_endp_type,
+  char * const dds_topic_name,
+  size_t * const dds_topic_name_len,
+  char * const dds_type_name,
+  size_t * const dds_type_name_len);
+
+RTICONNEXTDDS_ROS2_ADAPTER_PUBLIC
+DDS_ReturnCode_t
+RTIROS2_Graph_compute_dds_reader_topic_names(
+  const char * const ros2_topic_name,
+  const char * const ros2_type_name,
+  const RTIROS2_GraphEndpointType_t ros2_endp_type,
+  char * const dds_topic_name,
+  size_t * const dds_topic_name_len,
+  char * const dds_type_name,
+  size_t * const dds_type_name_len);
+
 #endif  /* rti_ros2_graph_impl_h */

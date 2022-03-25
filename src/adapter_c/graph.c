@@ -981,7 +981,7 @@ done:
 }
 
 DDS_ReturnCode_t
-RTIROS2_Graph_compute_writer_topic_names(
+RTIROS2_Graph_compute_dds_writer_topic_names(
   const char * const ros2_topic_name,
   const char * const ros2_type_name,
   const RTIROS2_GraphEndpointType_t ros2_endp_type,
@@ -1044,7 +1044,7 @@ done:
 }
 
 DDS_ReturnCode_t
-RTIROS2_Graph_compute_reader_topic_names(
+RTIROS2_Graph_compute_dds_reader_topic_names(
   const char * const ros2_topic_name,
   const char * const ros2_type_name,
   const RTIROS2_GraphEndpointType_t ros2_endp_type,
@@ -1107,6 +1107,44 @@ done:
 }
 
 DDS_ReturnCode_t
+RTIROS2_Graph_compute_publisher_topic_names(
+  const char * const ros2_topic_name,
+  const char * const ros2_type_name,
+  char * const dds_topic_name,
+  size_t * const dds_topic_name_len,
+  char * const dds_type_name,
+  size_t * const dds_type_name_len)
+{
+  return RTIROS2_Graph_compute_dds_writer_topic_names(
+    ros2_topic_name,
+    ros2_type_name,
+    RTIROS2_GRAPH_ENDPOINT_PUBLISHER,
+    dds_topic_name,
+    dds_topic_name_len,
+    dds_type_name,
+    dds_type_name_len);
+}
+
+DDS_ReturnCode_t
+RTIROS2_Graph_compute_subscription_topic_names(
+  const char * const ros2_topic_name,
+  const char * const ros2_type_name,
+  char * const dds_topic_name,
+  size_t * const dds_topic_name_len,
+  char * const dds_type_name,
+  size_t * const dds_type_name_len)
+{
+  return RTIROS2_Graph_compute_dds_writer_topic_names(
+    ros2_topic_name,
+    ros2_type_name,
+    RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION,
+    dds_topic_name,
+    dds_topic_name_len,
+    dds_type_name,
+    dds_type_name_len);
+}
+
+DDS_ReturnCode_t
 RTIROS2_Graph_compute_service_topic_names(
   const char * const ros2_node_name,
   const char * const ros2_service_name,
@@ -1142,7 +1180,7 @@ RTIROS2_Graph_compute_service_topic_names(
     ros2_service_name, ros2_svc_name_len + 1);
 
   if (DDS_RETCODE_OK !=
-    RTIROS2_Graph_compute_reader_topic_names(
+    RTIROS2_Graph_compute_dds_reader_topic_names(
       ros2_topic_name,
       ros2_type_name,
       RTIROS2_GRAPH_ENDPOINT_SERVICE,
@@ -1155,7 +1193,7 @@ RTIROS2_Graph_compute_service_topic_names(
   }
 
   if (DDS_RETCODE_OK !=
-    RTIROS2_Graph_compute_writer_topic_names(
+    RTIROS2_Graph_compute_dds_writer_topic_names(
       ros2_topic_name,
       ros2_type_name,
       RTIROS2_GRAPH_ENDPOINT_SERVICE,
