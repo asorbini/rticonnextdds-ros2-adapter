@@ -375,17 +375,22 @@ RTIROS2_Graph_register_local_subscription(
   DDS_DataReader * const sub_reader)
 {
   RTIROS2_GraphEndpointHandle result = RTIROS2_GraphEndpointHandle_INVALID;
+  RTIROS2_GraphEndpoint * endp = NULL;
   if (NULL == self || NULL == sub_reader)
   {
     return RTIROS2_GraphEndpointHandle_INVALID;
   }
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
-  result = RTIROS2_Graph_register_local_subscriptionEA(
-    self, node_handle, sub_reader);
-  if (RTIROS2_GraphEndpointHandle_INVALID != result)
+  endp = RTIROS2_Graph_register_local_endpoint(
+    self, node_handle, RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION, sub_reader, NULL);
+  if (NULL == endp)
   {
-    RTIROS2_Graph_queue_update(self);
+    /* TODO(asorbini) Log error */
+    goto done;
   }
+  result = endp->handle;
+  RTIROS2_Graph_queue_update(self);
+done:
   RTIOsapiSemaphore_give(self->mutex_self);
   return result;
 }
@@ -397,17 +402,22 @@ RTIROS2_Graph_register_local_publisher(
   DDS_DataWriter * const pub_writer)
 {
   RTIROS2_GraphEndpointHandle result = RTIROS2_GraphEndpointHandle_INVALID;
+  RTIROS2_GraphEndpoint * endp = NULL;
   if (NULL == self || NULL == pub_writer)
   {
     return RTIROS2_GraphEndpointHandle_INVALID;
   }
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
-  result = RTIROS2_Graph_register_local_publisherEA(
-    self, node_handle, pub_writer);
-  if (RTIROS2_GraphEndpointHandle_INVALID != result)
+  endp = RTIROS2_Graph_register_local_endpoint(
+    self, node_handle, RTIROS2_GRAPH_ENDPOINT_PUBLISHER, NULL, pub_writer);
+  if (NULL == endp)
   {
-    RTIROS2_Graph_queue_update(self);
+    /* TODO(asorbini) Log error */
+    goto done;
   }
+  result = endp->handle;
+  RTIROS2_Graph_queue_update(self);
+done:
   RTIOsapiSemaphore_give(self->mutex_self);
   return result;
 }
@@ -420,17 +430,23 @@ RTIROS2_Graph_register_local_client(
   DDS_DataWriter * const client_writer)
 {
   RTIROS2_GraphEndpointHandle result = RTIROS2_GraphEndpointHandle_INVALID;
+  RTIROS2_GraphEndpoint * endp = NULL;
   if (NULL == self || NULL == client_reader || NULL == client_writer)
   {
     return RTIROS2_GraphEndpointHandle_INVALID;
   }
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
-  result = RTIROS2_Graph_register_local_clientEA(
-    self, node_handle, client_reader, client_writer);
-  if (RTIROS2_GraphEndpointHandle_INVALID != result)
+  endp = RTIROS2_Graph_register_local_endpoint(
+    self, node_handle, RTIROS2_GRAPH_ENDPOINT_CLIENT,
+    client_reader, client_writer);
+  if (NULL == endp)
   {
-    RTIROS2_Graph_queue_update(self);
+    /* TODO(asorbini) Log error */
+    goto done;
   }
+  result = endp->handle;
+  RTIROS2_Graph_queue_update(self);
+done:
   RTIOsapiSemaphore_give(self->mutex_self);
   return result;
 }
@@ -443,17 +459,23 @@ RTIROS2_Graph_register_local_service(
   DDS_DataWriter * const service_writer)
 {
   RTIROS2_GraphEndpointHandle result = RTIROS2_GraphEndpointHandle_INVALID;
+  RTIROS2_GraphEndpoint * endp = NULL;
   if (NULL == self || NULL == service_reader || NULL == service_writer)
   {
     return RTIROS2_GraphEndpointHandle_INVALID;
   }
   RTIOsapiSemaphore_take(self->mutex_self, RTI_NTP_TIME_INFINITE);
-  result = RTIROS2_Graph_register_local_serviceEA(
-    self, node_handle, service_reader, service_writer);
-  if (RTIROS2_GraphEndpointHandle_INVALID != result)
+  endp = RTIROS2_Graph_register_local_endpoint(
+    self, node_handle, RTIROS2_GRAPH_ENDPOINT_SERVICE,
+    service_reader, service_writer);
+  if (NULL == endp)
   {
-    RTIROS2_Graph_queue_update(self);
+    /* TODO(asorbini) Log error */
+    goto done;
   }
+  result = endp->handle;
+  RTIROS2_Graph_queue_update(self);
+done:
   RTIOsapiSemaphore_give(self->mutex_self);
   return result;
 }

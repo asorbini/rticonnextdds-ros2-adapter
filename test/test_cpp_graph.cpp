@@ -190,22 +190,30 @@ class TestGraphCppEndpoints : public TestGraphCppNode {
     ASSERT_NE(publisher, nullptr);
 
     topic = dds::topic::Topic<RTIROS2::String>(
-      graph_participant, "foo", "String");
+      graph_participant, "rt/foo", "String");
     ASSERT_NE(topic, nullptr);
 
-    sub_reader = create_reader();
+    topic_req = dds::topic::Topic<RTIROS2::String>(
+      graph_participant, "rq/foo/test_serviceRequest", "String");
+    ASSERT_NE(topic_req, nullptr);
+
+    topic_rep = dds::topic::Topic<RTIROS2::String>(
+      graph_participant, "rr/foo/test_serviceReply", "String");
+    ASSERT_NE(topic_rep, nullptr);
+
+    sub_reader = create_reader(topic);
     ASSERT_NE(sub_reader, nullptr);
-    pub_writer = create_writer();
+    pub_writer = create_writer(topic);
     ASSERT_NE(pub_writer, nullptr);
 
-    client_reader = create_reader();
+    client_reader = create_reader(topic_rep);
     ASSERT_NE(client_reader, nullptr);
-    client_writer = create_writer();
+    client_writer = create_writer(topic_req);
     ASSERT_NE(client_writer, nullptr);
 
-    service_reader = create_reader();
+    service_reader = create_reader(topic_req);
     ASSERT_NE(service_reader, nullptr);
-    service_writer = create_writer();
+    service_writer = create_writer(topic_rep);
     ASSERT_NE(service_writer, nullptr);
   }
 
@@ -223,18 +231,20 @@ class TestGraphCppEndpoints : public TestGraphCppNode {
   }
 
   dds::sub::DataReader<RTIROS2::String>
-  create_reader()
+  create_reader(dds::topic::Topic<RTIROS2::String> & topic)
   {
     return dds::sub::DataReader<RTIROS2::String>(subscriber, topic);
   }
 
   dds::pub::DataWriter<RTIROS2::String>
-  create_writer()
+  create_writer(dds::topic::Topic<RTIROS2::String> & topic)
   {
     return dds::pub::DataWriter<RTIROS2::String>(publisher, topic);
   }
 
   dds::topic::Topic<RTIROS2::String> topic{nullptr};
+  dds::topic::Topic<RTIROS2::String> topic_req{nullptr};
+  dds::topic::Topic<RTIROS2::String> topic_rep{nullptr};
   dds::sub::Subscriber subscriber{nullptr};
   dds::pub::Publisher publisher{nullptr};
   dds::sub::DataReader<RTIROS2::String> sub_reader{nullptr};

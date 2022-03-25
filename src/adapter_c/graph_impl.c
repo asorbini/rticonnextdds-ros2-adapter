@@ -642,166 +642,10 @@ RTIROS2_Graph_detect_endpoint_type(
   }
 }
 
-
-RTIROS2_GraphEndpointHandle
-RTIROS2_Graph_register_local_subscriptionEA(
-  RTIROS2_Graph * const self,
-  const RTIROS2_GraphNodeHandle node_handle,
-  DDS_DataReader * const sub_reader)
-{
-  RTIROS2_GraphEndpointHandle result = RTIROS2_GraphEndpointHandle_INVALID;
-  RTIROS2_GraphNode * node = NULL;
-  RTIROS2_GraphEndpoint * endp = NULL;
-
-  node = RTIROS2_Graph_lookup_local_node_by_handle(self, node_handle);
-  if (NULL == node)
-  {
-    /* TODO(asorbini) Log error */
-    goto done;
-  }
-
-  endp = RTIROS2_Graph_register_local_endpoint(
-    self, node, RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION, sub_reader, NULL);
-  if (NULL == endp)
-  {
-    /* TODO(asorbini) Log error */
-    goto done;
-  }
-
-  result = endp->handle;
-  
-done:
-  if (RTIROS2_GraphEndpointHandle_INVALID == result)
-  {
-    if (NULL != endp)
-    {
-      RTIROS2_Graph_finalize_endpoint(self, node, endp);
-    }
-  }
-  return result;
-}
-
-RTIROS2_GraphEndpointHandle
-RTIROS2_Graph_register_local_publisherEA(
-  RTIROS2_Graph * const self,
-  const RTIROS2_GraphNodeHandle node_handle,
-  DDS_DataWriter * const pub_writer)
-{
-  RTIROS2_GraphEndpointHandle result = RTIROS2_GraphEndpointHandle_INVALID;
-  RTIROS2_GraphNode * node = NULL;
-  RTIROS2_GraphEndpoint * endp = NULL;
-
-  node = RTIROS2_Graph_lookup_local_node_by_handle(self, node_handle);
-  if (NULL == node)
-  {
-    /* TODO(asorbini) Log error */
-    goto done;
-  }
-
-  endp = RTIROS2_Graph_register_local_endpoint(
-    self, node, RTIROS2_GRAPH_ENDPOINT_PUBLISHER, NULL, pub_writer);
-  if (NULL == endp)
-  {
-    /* TODO(asorbini) Log error */
-    goto done;
-  }
-
-  result = endp->handle;
-  
-done:
-  if (RTIROS2_GraphEndpointHandle_INVALID == result)
-  {
-    if (NULL != endp)
-    {
-      RTIROS2_Graph_finalize_endpoint(self, node, endp);
-    }
-  }
-  return result;
-}
-
-RTIROS2_GraphEndpointHandle
-RTIROS2_Graph_register_local_clientEA(
-  RTIROS2_Graph * const self,
-  const RTIROS2_GraphNodeHandle node_handle,
-  DDS_DataReader * const client_reader,
-  DDS_DataWriter * const client_writer)
-{
-  RTIROS2_GraphEndpointHandle result = RTIROS2_GraphEndpointHandle_INVALID;
-  RTIROS2_GraphNode * node = NULL;
-  RTIROS2_GraphEndpoint * endp = NULL;
-
-  node = RTIROS2_Graph_lookup_local_node_by_handle(self, node_handle);
-  if (NULL == node)
-  {
-    /* TODO(asorbini) Log error */
-    goto done;
-  }
-
-  endp = RTIROS2_Graph_register_local_endpoint(
-    self, node, RTIROS2_GRAPH_ENDPOINT_CLIENT, client_reader, client_writer);
-  if (NULL == endp)
-  {
-    /* TODO(asorbini) Log error */
-    goto done;
-  }
-
-  result = endp->handle;
-  
-done:
-  if (RTIROS2_GraphEndpointHandle_INVALID == result)
-  {
-    if (NULL != endp)
-    {
-      RTIROS2_Graph_finalize_endpoint(self, node, endp);
-    }
-  }
-
-  return result;
-}
-
-RTIROS2_GraphEndpointHandle
-RTIROS2_Graph_register_local_serviceEA(
-  RTIROS2_Graph * const self,
-  const RTIROS2_GraphNodeHandle node_handle,
-  DDS_DataReader * const service_reader,
-  DDS_DataWriter * const service_writer)
-{
-  RTIROS2_GraphEndpointHandle result = RTIROS2_GraphEndpointHandle_INVALID;
-  RTIROS2_GraphNode * node = NULL;
-  RTIROS2_GraphEndpoint * endp = NULL;
-
-  node = RTIROS2_Graph_lookup_local_node_by_handle(self, node_handle);
-  if (NULL == node)
-  {
-    /* TODO(asorbini) Log error */
-    goto done;
-  }
-
-  endp = RTIROS2_Graph_register_local_endpoint(
-    self, node, RTIROS2_GRAPH_ENDPOINT_SERVICE, service_reader, service_writer);
-  if (NULL == endp)
-  {
-    /* TODO(asorbini) Log error */
-    goto done;
-  }
-
-  result = endp->handle;
-  
-done:
-  if (RTIROS2_GraphEndpointHandle_INVALID == result)
-  {
-    if (NULL != endp)
-    {
-      RTIROS2_Graph_finalize_endpoint(self, node, endp);
-    }
-  }
-  return result;
-}
-
 RTIROS2_GraphEndpoint *
 RTIROS2_Graph_register_local_endpoint(
   RTIROS2_Graph * const self,
-  RTIROS2_GraphNode * const node,
+  const RTIROS2_GraphNodeHandle node_handle,
   const RTIROS2_GraphEndpointType_t endp_type,
   DDS_DataReader * const dds_reader,
   DDS_DataWriter * const dds_writer)
@@ -810,6 +654,15 @@ RTIROS2_Graph_register_local_endpoint(
   RTIROS2_GraphEndpoint * existing = NULL;
   static const RTIROS2_GraphEndpoint def_endp = RTIROS2_GraphEndpoint_INITIALIZER;
   RTIROS2_GraphEndpointHandle endp_handle = RTIROS2_GraphEndpointHandle_INVALID;
+  RTIROS2_GraphNode * node = NULL;
+  RTIROS2_GraphEndpointType_t detected_type = RTIROS2_GRAPH_ENDPOINT_UNKNOWN;
+
+  node = RTIROS2_Graph_lookup_local_node_by_handle(self, node_handle);
+  if (NULL == node)
+  {
+    /* TODO(asorbini) Log error */
+    goto done;
+  }
 
   /* Check that the DDS endpoints have not already been assigned to another
     endpoint */
@@ -819,6 +672,32 @@ RTIROS2_Graph_register_local_endpoint(
   {
     /* TODO(asorbini) Log error */
     goto done;
+  }
+
+  /* Check that the topic name follows the ROS 2 naming conventions */
+  if (NULL != dds_reader)
+  {
+    detected_type = RTIROS2_Graph_detect_endpoint_type(
+      DDS_TopicDescription_get_name(
+        DDS_DataReader_get_topicdescription(dds_reader)), DDS_BOOLEAN_FALSE);
+    if (endp_type != detected_type)
+    {
+      /* TODO(asorbini) Log error */
+      goto done;
+    }
+  }
+
+  if (NULL != dds_writer)
+  {
+    detected_type = RTIROS2_Graph_detect_endpoint_type(
+      DDS_TopicDescription_get_name(
+        DDS_Topic_as_topicdescription(
+          DDS_DataWriter_get_topic(dds_writer))), DDS_BOOLEAN_TRUE);
+    if (endp_type != detected_type)
+    {
+      /* TODO(asorbini) Log error */
+      goto done;
+    }
   }
 
   endp_handle = RTIROS2_Graph_next_endpoint_handle(self, node);
@@ -855,7 +734,6 @@ RTIROS2_Graph_register_local_endpoint(
     result->dds_writer = dds_writer;
     node->writers_len += 1;
   }
-
 
 done:
   return result;
@@ -1314,8 +1192,14 @@ RTIROS2_Graph_inspect_local_nodeEA(
       {
       case RTIROS2_GRAPH_ENDPOINT_PUBLISHER:
       {
-        endp_handle =
-          RTIROS2_Graph_register_local_publisherEA(self, node->handle, dw);
+        endp = RTIROS2_Graph_register_local_endpoint(
+          self, node->handle, RTIROS2_GRAPH_ENDPOINT_PUBLISHER, NULL, dw);
+        if (NULL == endp)
+        {
+          /* TODO(asorbini) Log error */
+          goto done;
+        }
+        endp_handle = endp->handle;
         break;
       }
       case RTIROS2_GRAPH_ENDPOINT_CLIENT:
@@ -1324,9 +1208,15 @@ RTIROS2_Graph_inspect_local_nodeEA(
           self, node, topic_name, DDS_BOOLEAN_FALSE);
         if (endp == NULL)
         {
-          endp_handle =
-            RTIROS2_Graph_register_local_clientEA(
-              self, node->handle, NULL, dw);
+          endp = RTIROS2_Graph_register_local_endpoint(
+            self, node->handle, RTIROS2_GRAPH_ENDPOINT_CLIENT,
+            NULL, dw);
+          if (NULL == endp)
+          {
+            /* TODO(asorbini) Log error */
+            goto done;
+          }
+          endp_handle = endp->handle;
         }
         else if (NULL != endp->dds_writer)
         {
@@ -1345,9 +1235,15 @@ RTIROS2_Graph_inspect_local_nodeEA(
           self, node, topic_name, DDS_BOOLEAN_FALSE);
         if (endp == NULL)
         {
-          endp_handle =
-            RTIROS2_Graph_register_local_serviceEA(
-              self, node->handle, NULL, dw);
+          endp = RTIROS2_Graph_register_local_endpoint(
+            self, node->handle, RTIROS2_GRAPH_ENDPOINT_SERVICE,
+            NULL, dw);
+          if (NULL == endp)
+          {
+            /* TODO(asorbini) Log error */
+            goto done;
+          }
+          endp_handle = endp->handle;
         }
         else if (NULL != endp->dds_writer)
         {
@@ -1410,8 +1306,14 @@ RTIROS2_Graph_inspect_local_nodeEA(
       {
       case RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION:
       {
-        endp_handle =
-          RTIROS2_Graph_register_local_subscriptionEA(self, node->handle, dr);
+        endp = RTIROS2_Graph_register_local_endpoint(
+          self, node->handle, RTIROS2_GRAPH_ENDPOINT_SUBSCRIPTION, dr, NULL);
+        if (NULL == endp)
+        {
+          /* TODO(asorbini) Log error */
+          goto done;
+        }
+        endp_handle = endp->handle;
         break;
       }
       case RTIROS2_GRAPH_ENDPOINT_CLIENT:
@@ -1420,8 +1322,15 @@ RTIROS2_Graph_inspect_local_nodeEA(
           self, node, topic_name, DDS_BOOLEAN_FALSE);
         if (NULL == endp)
         {
-          endp_handle =
-            RTIROS2_Graph_register_local_clientEA(self, node->handle, dr, NULL);
+          endp = RTIROS2_Graph_register_local_endpoint(
+            self, node->handle, RTIROS2_GRAPH_ENDPOINT_CLIENT,
+            dr, NULL);
+          if (NULL == endp)
+          {
+            /* TODO(asorbini) Log error */
+            goto done;
+          }
+          endp_handle = endp->handle;
         }
         else if (NULL != endp->dds_reader)
         {
@@ -1441,8 +1350,15 @@ RTIROS2_Graph_inspect_local_nodeEA(
           self, node, topic_name, DDS_BOOLEAN_FALSE);
         if (NULL == endp)
         {
-          endp_handle =
-            RTIROS2_Graph_register_local_serviceEA(self, node->handle, dr, NULL);
+          endp = RTIROS2_Graph_register_local_endpoint(
+            self, node->handle, RTIROS2_GRAPH_ENDPOINT_SERVICE,
+            dr, NULL);
+          if (NULL == endp)
+          {
+            /* TODO(asorbini) Log error */
+            goto done;
+          }
+          endp_handle = endp->handle;
         }
         else if (NULL != endp->dds_reader)
         {

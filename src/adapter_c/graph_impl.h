@@ -193,36 +193,10 @@ RTIROS2_Graph_lookup_local_endpoint_by_topic_name(
   const char * const topic_name,
   const DDS_Boolean writer);
 
-RTIROS2_GraphEndpointHandle
-RTIROS2_Graph_register_local_subscriptionEA(
-  RTIROS2_Graph * const self,
-  const RTIROS2_GraphNodeHandle node_handle,
-  DDS_DataReader * const sub_reader);
-
-RTIROS2_GraphEndpointHandle
-RTIROS2_Graph_register_local_publisherEA(
-  RTIROS2_Graph * const self,
-  const RTIROS2_GraphNodeHandle node_handle,
-  DDS_DataWriter * const pub_writer);
-
-RTIROS2_GraphEndpointHandle
-RTIROS2_Graph_register_local_clientEA(
-  RTIROS2_Graph * const self,
-  const RTIROS2_GraphNodeHandle node_handle,
-  DDS_DataReader * const client_reader,
-  DDS_DataWriter * const client_writer);
-
-RTIROS2_GraphEndpointHandle
-RTIROS2_Graph_register_local_serviceEA(
-  RTIROS2_Graph * const self,
-  const RTIROS2_GraphNodeHandle node_handle,
-  DDS_DataReader * const service_reader,
-  DDS_DataWriter * const service_writer);
-
 RTIROS2_GraphEndpoint *
 RTIROS2_Graph_register_local_endpoint(
   RTIROS2_Graph * const self,
-  RTIROS2_GraphNode * const node,
+  const RTIROS2_GraphNodeHandle node_handle,
   const RTIROS2_GraphEndpointType_t endp_type,
   DDS_DataReader * const dds_reader,
   DDS_DataWriter * const dds_writer);
