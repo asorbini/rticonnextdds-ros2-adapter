@@ -86,6 +86,9 @@ set(generated_code_cpp ${generated_code_cpp_headers} ${generated_code_cpp_source
 
 set(graph_idl ${CMAKE_CURRENT_SOURCE_DIR}/idl/${PROJECT_NAME}/${PROJECT_NAME}_model.idl)
 
+message(STATUS "RTIDDSGEN_GLOBAL_ARGS = '${RTIDDSGEN_GLOBAL_ARGS}'")
+message(STATUS RTIDDSGEN_GLOBAL_ARGS = "'" ${RTIDDSGEN_GLOBAL_ARGS} "'")
+
 add_custom_command(OUTPUT ${generated_code_c}
   COMMAND ${CMAKE_COMMAND} -E make_directory ${generated_code_dir}/${PROJECT_NAME}
   COMMAND ${rtiddsgen_bin} -language C
