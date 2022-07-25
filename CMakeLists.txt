@@ -95,7 +95,7 @@ add_custom_command(OUTPUT ${generated_code_c}
                            ${RTIDDSGEN_GLOBAL_ARGS}
                            ${graph_idl}
   DEPENDS ${graph_idl}
-  VERBATIM)
+  )
 
 add_custom_command(OUTPUT ${generated_code_cpp}
   COMMAND ${CMAKE_COMMAND} -E make_directory ${generated_code_dir}/${PROJECT_NAME}
@@ -106,7 +106,7 @@ add_custom_command(OUTPUT ${generated_code_cpp}
                            ${RTIDDSGEN_GLOBAL_ARGS}
                            ${graph_idl}
   DEPENDS ${graph_idl}
-  VERBATIM)
+  )
 
 add_library(${PROJECT_NAME}_c SHARED
   src/adapter_c/graph_impl.h
