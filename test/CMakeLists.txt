@@ -93,6 +93,7 @@ add_custom_command(OUTPUT ${generated_code_c}
                            -replace
                            -d ${generated_code_dir}/${PROJECT_NAME}
                            -unboundedSupport
+                           ${RTIDDSGEN_GLOBAL_ARGS}
                            ${graph_test_idl}
   DEPENDS ${graph_test_idl})
 
@@ -102,6 +103,7 @@ add_custom_command(OUTPUT ${generated_code_cpp}
                            -replace
                            -d ${generated_code_dir}/${PROJECT_NAME}
                            -unboundedSupport
+                           ${RTIDDSGEN_GLOBAL_ARGS}
                            ${graph_test_idl}
   DEPENDS ${graph_test_idl})
 
