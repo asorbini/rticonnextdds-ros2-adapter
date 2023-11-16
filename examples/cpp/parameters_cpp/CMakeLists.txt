@@ -71,6 +71,7 @@ add_custom_command(OUTPUT ${generated_code}
                            -replace
                            -d ${generated_code_dir}
                            -unboundedSupport
+                           ${RTIDDSGEN_GLOBAL_ARGS}
                            ${idl_file}
   DEPENDS ${idl_file})
 
